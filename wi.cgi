@@ -136,10 +136,12 @@ function show_page_editor
   echo "<form action='$CGI_URL/wi.cgi' method='post'>"
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<textarea name="content" cols="100" rows="40">'
+  echo '<textarea name="content" id="content" cols="100" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false};">'
   (cd $DOCUMENT_ROOT$WIKI_PATH; cat $1.md)
   echo '</textarea><hr />'
-  echo '<input type="submit" value="Publish"></form>'
+  echo '<input type="submit" id="submit" value="Publish"></form>'
+  echo '<script> document.getElementById("content").focus(); </script>'
+  (cd $DOCUMENT_ROOT$WIKI_PATH; cat $1.md)
 }
 
 function show_create_page
