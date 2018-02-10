@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="author" content="Ricardo Catalinas Jiménez" /> 
-		<meta name="description" content="Wi! wiki" />
-		<title>Wi!</title>
-		<link rel="stylesheet" type="text/css" href="/wiki/wi.css" />
-	</head>
+  <head>
+    <meta charset="utf-8" />
+    <title>Wi!</title>
+    <link rel="stylesheet" type="text/css" href="./data/wi.css" />
+  </head>
 
-	<body>
+  <body>
 <!-- HEADER END -->

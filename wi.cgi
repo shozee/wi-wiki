@@ -59,13 +59,13 @@ function show_pages_list
 {
   typeset file
   typeset page
-  echo '[&mdash; Index &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=Index)'
+  echo '[&mdash; Home &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=Home)'
   echo '[&mdash; New &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=New)'
   for file in $(cd $DOCUMENT_ROOT$WIKI_PATH; find . -name \*.md)
   do
     page=${file#./}
     page=${page%%.md}
-    if [[ $page != Index ]] && [[ $page != New ]]
+    if [[ $page != Home ]] && [[ $page != New ]]
     then
       echo '['$page']('$CGI_URL'/wi.cgi?cmd=get&page='$page')'
     fi
@@ -76,11 +76,11 @@ function show_static_pages_list
 {
   typeset file
   typeset page
-  echo '[&mdash; Index &mdash;]('$WIKI_PATH'/Index.html)'
+  echo '[&mdash; Home &mdash;]('$WIKI_PATH'/Home.html)'
   for file in *.md
   do
     page=${file%%.md}
-    if [[ $page != Index ]] && [[ $page != New ]]
+    if [[ $page != Home ]] && [[ $page != New ]]
     then
       echo '['$page']('$WIKI_PATH'/'$page.html')'
     fi
@@ -168,7 +168,7 @@ function show_page
         show_create_page
       else
         show_pages_list
-        show_page_content ${page:-Index} 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
+        show_page_content ${page:-Home} 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
       fi
       ;;
     GET+search)
@@ -194,7 +194,7 @@ function show_page
       page=$(get_value "$2" page)
       delete_page $page
       show_pages_list
-      show_page_content Index 'cat $DOCUMENT_ROOT$WIKI_PATH/Index.md'
+      show_page_content Home 'cat $DOCUMENT_ROOT$WIKI_PATH/Home.md'
       ;;
     POST+publish)
       page=$(get_value "$2" page)
@@ -243,7 +243,9 @@ function show_page_controls
 
 function create_page
 {
-  (cd $DOCUMENT_ROOT$WIKI_PATH; touch $1.md; git add $1.md; git commit -m 'Wi!: create page') >/dev/null
+  D=`dirname  $1`
+  F=`basename $1`.md
+  (cd $DOCUMENT_ROOT$WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; git add $D/$F; git commit -m 'Wi!: create page') >/dev/null
 }
 
 function publish_content
@@ -299,7 +301,7 @@ function generate_static
     cat $DOCUMENT_ROOT/$DATA_PATH/FOOTER >>$file_html
     echo $file_html generated
   done
-  ln -sf Index.html index.html
+  ln -sf Home.html Home.html
 }
 
 if [[ $# == 0 ]]
