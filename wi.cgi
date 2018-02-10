@@ -23,7 +23,7 @@ CGI_URL=/~shoji/wish
 
 function decode_query
 {
-  sed 's/%\([[:alnum:]][[:alnum:]]\)/\\x\1/g' | xargs --null printf
+  sed 's/%\([[:alnum:]][[:alnum:]]\)/\\x\1/g' | nkf -w --numchar-input | xargs --null printf
 }
 
 function get_value
