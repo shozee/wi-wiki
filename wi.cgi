@@ -60,7 +60,6 @@ function show_pages_list
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=Home)'
-  echo '[&mdash; New &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=New)'
   for file in $(cd $DOCUMENT_ROOT$WIKI_PATH; find . -name \*.md)
   do
     page=${file#./}
@@ -221,25 +220,27 @@ function show_page
 function show_page_controls
 {
   echo '<table><tr><td>'
+  show_search
+  echo '</td><td>'
+  echo "<form action='$CGI_URL/wi.cgi' method='get'>"
+  echo '<input type="hidden" name="cmd" value="get">'
+  echo '<input type="hidden" name="page" value="New">'
+  echo '<input type="submit" value="New"></form>'
+  echo '</td><td>'
   echo "<form action='$CGI_URL/wi.cgi' method='get'>"
   echo '<input type="hidden" name="cmd" value="edit">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Edit"></form>'
-  echo '</td>'
-  echo '<td>'
+  echo '</td><td>'
   echo "<form action='$CGI_URL/wi.cgi' method='get'>"
   echo '<input type="hidden" name="cmd" value="history">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="History"></form>'
-  echo '</td>'
-  echo '<td>'
+  echo '</td><td>'
   echo "<form action='$CGI_URL/wi.cgi' method='post'>"
   echo '<input type="hidden" name="cmd" value="delete">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Delete"></form>'
-  echo '</td>'
-  echo '<td>'
-  show_search
   echo '</tr></td></table>'
 }
 
