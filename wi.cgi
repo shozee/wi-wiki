@@ -89,12 +89,10 @@ function show_static_pages_list
 
 function show_search
 {
-  print_rule
   echo "<form action='$CGI_URL/wi.cgi' method='get'>"
   echo '<input type="hidden" name="cmd" value="search">'
-  echo '<input type="text" name="pattern" size="80" maxlength="100">'
+  echo '<input type="text" name="pattern" size="20" maxlength="100">'
   echo '<input type="submit" value="Search"></form>'
-  print_rule
 }
 
 function show_search_results
@@ -112,10 +110,12 @@ function show_page_content
 {
   if [[ -r $DOCUMENT_ROOT$WIKI_PATH/$1.md ]]
   then
-    show_search
+    print_rule
+    show_page_controls $1
+    print_rule
     echo '#' $1
     eval "$2"
-    show_page_controls $1
+    print_rule
   else
     print_error_page $1
   fi
@@ -174,7 +174,9 @@ function show_page
     GET+search)
       pattern=$(get_value "$QUERY_STRING" pattern)
       show_pages_list
+      print_rule
       show_search
+      print_rule
       show_search_results "$pattern"
       print_rule
       ;;
@@ -187,19 +189,6 @@ function show_page
       page=$(get_value "$QUERY_STRING" page)
       show_pages_list
       show_page_editor $page
-      ;;
-    POST+add)
-      page=$(get_value "$2" page)
-      line=$(get_value "$2" line)
-      add_line $page "$line"
-      show_pages_list
-      show_page_content $page 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
-      ;;
-    POST+undo)
-      page=$(get_value "$2" page)
-      undo_change
-      show_pages_list
-      show_page_content $page 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
       ;;
     POST+delete)
       page=$(get_value "$2" page)
@@ -229,13 +218,6 @@ function show_page
 
 function show_page_controls
 {
-  print_rule
-  echo '<form action="/cgi-bin/wi.cgi" method="post">'
-  echo '<input type="hidden" name="cmd" value="add">'
-  echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<input type="text" name="line" size="80" maxlength="200">'
-  echo '<input type="submit" value="Add"></form>'
-  echo
   echo '<table><tr><td>'
   echo "<form action='$CGI_URL/wi.cgi' method='get'>"
   echo '<input type="hidden" name="cmd" value="edit">'
@@ -250,15 +232,12 @@ function show_page_controls
   echo '</td>'
   echo '<td>'
   echo "<form action='$CGI_URL/wi.cgi' method='post'>"
-  echo '<input type="hidden" name="cmd" value="undo">'
-  echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<input type="submit" value="Undo"></form>'
-  echo '</td>'
-  echo '<td>'
-  echo '<form action="/cgi-bin/wi.cgi" method="post">'
   echo '<input type="hidden" name="cmd" value="delete">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Delete"></form>'
+  echo '</td>'
+  echo '<td>'
+  show_search
   echo '</tr></td></table>'
 }
 
@@ -270,16 +249,6 @@ function create_page
 function publish_content
 {
   (cd $DOCUMENT_ROOT$WIKI_PATH; echo "$2" >$1.md; git add $1.md; git commit -m 'Wi!: publish content') >/dev/null
-}
-
-function undo_change
-{
-  (cd $DOCUMENT_ROOT$WIKI_PATH; git reset --hard HEAD^) >/dev/null
-}
-
-function add_line
-{
-  (cd $DOCUMENT_ROOT$WIKI_PATH; echo -e "\n$2\n" >>$1.md; git add $1.md; git commit -m 'Wi!: add line') >/dev/null
 }
 
 function print_history
