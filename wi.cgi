@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DOCUMENT_ROOT=/home/shoji/public_html/wish
 MARKDOWN_BIN=subsh/markdown
 #MARKDOWN_BIN=subsh/discount
-WIKI_PATH=/wiki
+
+WIKI_PATH=/home/shoji/public_html/wish/wiki
 WIKI_URL=/~shoji/wiki
-DATA_PATH=data
-CGI_URL=/~shoji/wish
+DATA_PATH=/home/shoji/public_html/wish/data
+CGI_URL=/~shoji/wish/wi.cgi
 
 function decode_query
 {
@@ -46,8 +46,8 @@ function print_rule
 function markdown_relative_path
 {
   D=`dirname  $1`
-  sed "s%!\\[\\(.*\\)\\](\\([^:]*\\))%![\\1]($WIKI_URL/$D/\\2)%g" | \
-  sed "s%\\([^!]\\)\\[\\(.*\\)\\](\\([^:]*\\))%\\1[\\2]($CGI_URL/wi.cgi?cmd=get\&page=$D/\\3)%g"
+  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($WIKI_URL/$D/\\2)%g" \
+      -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${CGI_URL}?cmd=get\&page=$D/\\1)%g"
 }
 
 function print_error_page
@@ -68,14 +68,14 @@ function show_pages_list
 {
   typeset file
   typeset page
-  echo '[&mdash; Home &mdash;]('$CGI_URL'/wi.cgi?cmd=get&page=Home)'
-  for file in $(cd $DOCUMENT_ROOT$WIKI_PATH; find . -name \*.md)
+  echo '[&mdash; Home &mdash;]('$CGI_URL'?cmd=get&page=Home)'
+  for file in $(cd $WIKI_PATH; find . -name \*.md)
   do
     page=${file#./}
     page=${page%%.md}
     if [[ $page != Home ]]
     then
-      echo '['$page']('$CGI_URL'/wi.cgi?cmd=get&page='$page')'
+      echo '['$page']('$CGI_URL'?cmd=get&page='$page')'
     fi
   done
 }
@@ -84,20 +84,20 @@ function show_static_pages_list
 {
   typeset file
   typeset page
-  echo '[&mdash; Home &mdash;]('$WIKI_PATH'/Home.html)'
+  echo '[&mdash; Home &mdash;]('$WIKI_URL'/Home.html)'
   for file in *.md
   do
     page=${file%%.md}
     if [[ $page != Home ]]
     then
-      echo '['$page']('$WIKI_PATH'/'$page.html')'
+      echo '['$page']('$WIKI_URL'/'$page.html')'
     fi
   done
 }
 
 function show_search
 {
-  echo "<form action='$CGI_URL/wi.cgi' method='get'>"
+  echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="search">'
   echo '<input type="text" name="pattern" size="20" maxlength="100">'
   echo '<input type="submit" value="Search"></form>'
@@ -107,16 +107,16 @@ function show_search_results
 {
   typeset result
   echo '#' Search: $1
-  (cd $DOCUMENT_ROOT$WIKI_PATH; egrep -i "$1" *.md) | while read result
+  (cd $WIKI_PATH; egrep -i "$1" *.md) | while read result
   do
-    echo "$result" | sed "s%\(.*\)\..*:%[\1]($CGI_URL/wi.cgi?cmd=get\&page=\1): %g"
+    echo "$result" | sed "s%\(.*\)\..*:%[\1]($CGI_URL?cmd=get\&page=\1): %g"
     echo
   done
 }
 
 function show_page_content
 {
-  if [[ -r $DOCUMENT_ROOT$WIKI_PATH/$1.md ]]
+  if [[ -r $WIKI_PATH/$1.md ]]
   then
     print_rule
     show_page_controls $1
@@ -141,22 +141,22 @@ function show_page_editor
 {
   print_rule
   echo '#' $1
-  echo "<form action='$CGI_URL/wi.cgi' method='post'>"
+  echo "<form action='$CGI_URL' method='post'>"
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<textarea name="content" id="content" cols="100" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false};">'
-  (cd $DOCUMENT_ROOT$WIKI_PATH; cat $1.md)
+  (cd $WIKI_PATH; cat $1.md)
   echo '</textarea><hr />'
   echo '<input type="submit" id="submit" value="Publish"></form>'
   echo '<script> document.getElementById("content").focus(); </script>'
-  (cd $DOCUMENT_ROOT$WIKI_PATH; cat $1.md)
+  (cd $WIKI_PATH; cat $1.md)
 }
 
 function show_create_page
 {
   print_rule
   echo '#' Create new page:
-  echo "<form action='$CGI_URL/wi.cgi' method='post'>"
+  echo "<form action='$CGI_URL' method='post'>"
   echo '<input type="hidden" name="cmd" value="create">'
   echo '<input type="text" name="page" size="20" maxlength="30">'
   echo '<input type="submit" value="Create"></form>'
@@ -178,7 +178,7 @@ function show_page
         show_create_page
       else
         show_pages_list
-        show_page_content ${page:-Home} 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
+        show_page_content ${page:-Home} 'cat $WIKI_PATH/$1.md'
       fi
       ;;
     GET+search)
@@ -204,20 +204,20 @@ function show_page
       page=$(get_value "$2" page)
       delete_page $page
       show_pages_list
-      show_page_content Home 'cat $DOCUMENT_ROOT$WIKI_PATH/Home.md'
+      show_page_content Home 'cat $WIKI_PATH/Home.md'
       ;;
     POST+publish)
       page=$(get_value "$2" page)
       content=$(get_value "$2" content)
       publish_content $page "$content"
       show_pages_list
-      show_page_content $page 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
+      show_page_content $page 'cat $WIKI_PATH/$1.md'
       ;;
     POST+create)
       page=$(get_value "$2" page)
       create_page $page
       show_pages_list
-      show_page_content $page 'cat $DOCUMENT_ROOT$WIKI_PATH/$1.md'
+      show_page_content $page 'cat $WIKI_PATH/$1.md'
       ;;
     *)
       show_pages_list
@@ -231,22 +231,22 @@ function show_page_controls
   echo '<table><tr><td>'
   show_search
   echo '</td><td>'
-  echo "<form action='$CGI_URL/wi.cgi' method='get'>"
+  echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="get">'
   echo '<input type="hidden" name="page" value="New">'
   echo '<input type="submit" value="New"></form>'
   echo '</td><td>'
-  echo "<form action='$CGI_URL/wi.cgi' method='get'>"
+  echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="edit">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Edit"></form>'
   echo '</td><td>'
-  echo "<form action='$CGI_URL/wi.cgi' method='get'>"
+  echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="history">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="History"></form>'
   echo '</td><td>'
-  echo "<form action='$CGI_URL/wi.cgi' method='post'>"
+  echo "<form action='$CGI_URL' method='post'>"
   echo '<input type="hidden" name="cmd" value="delete">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Delete"></form>'
@@ -257,18 +257,18 @@ function create_page
 {
   D=`dirname  $1`
   F=`basename $1`.md
-  (cd $DOCUMENT_ROOT$WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; git add $D/$F; git commit -m 'Wi!: create page') >/dev/null
+  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; git add $D/$F; git commit -m "Create $1") >/dev/null
 }
 
 function publish_content
 {
-  (cd $DOCUMENT_ROOT$WIKI_PATH; echo "$2" >$1.md; git add $1.md; git commit -m 'Wi!: publish content') >/dev/null
+  (cd $WIKI_PATH; echo "$2" >$1.md; git add $1.md; git commit -m "Publish $1") >/dev/null
 }
 
 function print_history
 {
   typeset line
-  (cd $DOCUMENT_ROOT$WIKI_PATH; git log -p -n 10 $1.md) | while read line
+  (cd $WIKI_PATH; git log -p -n 10 $1.md) | while read line
   do
     echo -e "\t$line"
   done
@@ -276,7 +276,7 @@ function print_history
 
 function delete_page
 {
-  (cd $DOCUMENT_ROOT$WIKI_PATH; git rm -f $1.md; git commit -m 'Wi!: delete page') >/dev/null
+  (cd $WIKI_PATH; git rm -f $1.md; git commit -m "Delete $1") >/dev/null
 }
 
 function run_CGI
@@ -285,7 +285,7 @@ function run_CGI
   typeset query
   echo Content-Type: text/html
   echo
-  cat $DOCUMENT_ROOT/$DATA_PATH/HEADER
+  cat $DATA_PATH/HEADER
   if [[ $REQUEST_METHOD == GET ]]
   then
     cmd=$(get_value "$QUERY_STRING" cmd)
@@ -295,7 +295,7 @@ function run_CGI
     cmd=$(get_value "$query" cmd)
   fi
   show_page $REQUEST_METHOD+$cmd "$query" | $MARKDOWN_BIN
-  cat $DOCUMENT_ROOT/$DATA_PATH/FOOTER
+  cat $DATA_PATH/FOOTER
 }
 
 function generate_static
@@ -307,10 +307,10 @@ function generate_static
   do
     page=${file_markdown%%.md}
     file_html=$page.html
-    cat $DOCUMENT_ROOT/$DATA_PATH/HEADER >$file_html
+    cat $DATA_PATH/HEADER >$file_html
     show_static_pages_list | $MARKDOWN_BIN >>$file_html
     show_static_page_content $page | $MARKDOWN_BIN >>$file_html
-    cat $DOCUMENT_ROOT/$DATA_PATH/FOOTER >>$file_html
+    cat $DATA_PATH/FOOTER >>$file_html
     echo $file_html generated
   done
   ln -sf Home.html Home.html
