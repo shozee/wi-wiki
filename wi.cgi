@@ -17,7 +17,9 @@
 
 DOCUMENT_ROOT=/home/shoji/public_html/wish
 MARKDOWN_BIN=subsh/markdown
+#MARKDOWN_BIN=subsh/discount
 WIKI_PATH=/wiki
+WIKI_URL=/~shoji/wiki
 DATA_PATH=data
 CGI_URL=/~shoji/wish
 
@@ -39,6 +41,13 @@ function print_rule
 {
   echo
   echo '---'
+}
+
+function markdown_relative_path
+{
+  D=`dirname  $1`
+  sed "s%!\\[\\(.*\\)\\](\\([^:]*\\))%![\\1]($WIKI_URL/$D/\\2)%g" | \
+  sed "s%\\([^!]\\)\\[\\(.*\\)\\](\\([^:]*\\))%\\1[\\2]($CGI_URL/wi.cgi?cmd=get\&page=$D/\\3)%g"
 }
 
 function print_error_page
@@ -64,7 +73,7 @@ function show_pages_list
   do
     page=${file#./}
     page=${page%%.md}
-    if [[ $page != Home ]] && [[ $page != New ]]
+    if [[ $page != Home ]]
     then
       echo '['$page']('$CGI_URL'/wi.cgi?cmd=get&page='$page')'
     fi
@@ -79,7 +88,7 @@ function show_static_pages_list
   for file in *.md
   do
     page=${file%%.md}
-    if [[ $page != Home ]] && [[ $page != New ]]
+    if [[ $page != Home ]]
     then
       echo '['$page']('$WIKI_PATH'/'$page.html')'
     fi
@@ -113,7 +122,7 @@ function show_page_content
     show_page_controls $1
     print_rule
     echo '#' $1
-    eval "$2"
+    eval "$2" | markdown_relative_path $1
     print_rule
   else
     print_error_page $1
