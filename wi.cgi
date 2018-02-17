@@ -19,7 +19,7 @@ MARKDOWN_BIN=subsh/markdown
 #MARKDOWN_BIN=subsh/discount
 
 WIKI_PATH=/home/shoji/public_html/wish/wiki
-WIKI_URL=/~shoji/wiki
+WIKI_URL=/~shoji/wish/wiki
 DATA_PATH=/home/shoji/public_html/wish/data
 CGI_URL=/~shoji/wish/wi.cgi
 
@@ -41,13 +41,6 @@ function print_rule
 {
   echo
   echo '---'
-}
-
-function markdown_relative_path
-{
-  D=`dirname  $1`
-  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($WIKI_URL/$D/\\2)%g" \
-      -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${CGI_URL}?cmd=get\&page=$D/\\1)%g"
 }
 
 function print_error_page
@@ -85,9 +78,10 @@ function show_static_pages_list
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$WIKI_URL'/Home.html)'
-  for file in *.md
+  for file in $(cd $WIKI_PATH; find . -name \*.md)
   do
-    page=${file%%.md}
+    page=${file#./}
+    page=${page%%.md}
     if [[ $page != Home ]]
     then
       echo '['$page']('$WIKI_URL'/'$page.html')'
@@ -107,12 +101,29 @@ function show_search_results
 {
   typeset result
   echo '#' Search: $1
-  (cd $WIKI_PATH; egrep -i "$1" *.md) | while read result
+  (cd $WIKI_PATH; egrep --include=*.md -r -i "$1") | while read result
   do
-    echo "$result" | sed "s%\(.*\)\..*:%[\1]($CGI_URL?cmd=get\&page=\1): %g"
+    echo "$result" | sed -e "s%\\(.*\\).md:%[\1]($CGI_URL?cmd=get\&page=\1): %g"
     echo
   done
 }
+
+function relative_path
+{
+  # set the URL prefix to $WIKI_URL if : is not contained, then
+  #   pass it to cgi if the URL postfix matches .md
+  D=`dirname  $1`
+  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($WIKI_URL/$D/\\2)%g" \
+      -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${CGI_URL}?cmd=get\&page=$D/\\1)%g"
+}
+
+function static_relative_path
+{
+  D=`dirname  $1`
+  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($WIKI_URL/$D/\\2)%g" \
+      -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${WIKI_URL}/\\1.html)%g"
+}
+
 
 function show_page_content
 {
@@ -122,7 +133,7 @@ function show_page_content
     show_page_controls $1
     print_rule
     echo '#' $1
-    eval "$2" | markdown_relative_path $1
+    eval "$2" | relative_path $1
     print_rule
   else
     print_error_page $1
@@ -131,10 +142,13 @@ function show_page_content
 
 function show_static_page_content
 {
-  print_rule
-  echo '#' $1
-  cat $1.md
-  print_rule
+  if [[ -r $WIKI_PATH/$1.md ]]
+  then
+    print_rule
+    echo '#' $1
+    cat $WIKI_PATH/$1.md | static_relative_path $1
+    print_rule
+  fi
 }
 
 function show_page_editor
@@ -291,7 +305,7 @@ function run_CGI
     cmd=$(get_value "$QUERY_STRING" cmd)
     cmd=${cmd:-get}
   else
-    read query
+    query=`cat` # get stdin
     cmd=$(get_value "$query" cmd)
   fi
   show_page $REQUEST_METHOD+$cmd "$query" | $MARKDOWN_BIN
@@ -303,17 +317,17 @@ function generate_static
   typeset page
   typeset file_markdown
   typeset file_html
-  for file_markdown in *.md
+  for file_markdown in $(cd $WIKI_PATH ; find . -name \*.md)
   do
-    page=${file_markdown%%.md}
+    page=${file_markdown#./}
+    page=${page%%.md}
     file_html=$page.html
-    cat $DATA_PATH/HEADER >$file_html
-    show_static_pages_list | $MARKDOWN_BIN >>$file_html
-    show_static_page_content $page | $MARKDOWN_BIN >>$file_html
-    cat $DATA_PATH/FOOTER >>$file_html
+    cat $DATA_PATH/HEADER > $WIKI_PATH/$file_html
+    show_static_pages_list | $MARKDOWN_BIN >> $WIKI_PATH/$file_html
+    show_static_page_content $page | $MARKDOWN_BIN >> $WIKI_PATH/$file_html
+    cat $DATA_PATH/FOOTER >> $WIKI_PATH/$file_html
     echo $file_html generated
   done
-  ln -sf Home.html Home.html
 }
 
 if [[ $# == 0 ]]
