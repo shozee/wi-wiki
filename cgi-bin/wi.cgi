@@ -29,7 +29,7 @@ function decode_query
 
 function get_value
 {
-  if [ -n "$1" ]; then
+  if [[ -n $1 ]]; then
     echo -n "$1" | sed 's/\+/ /g' | sed -n "s/.*$2=\([^\&]*\).*/\1/p" | decode_query
   else
     echo ''
@@ -149,6 +149,24 @@ function show_static_page_content
   fi
 }
 
+function show_attachments
+{
+  line=''
+  d=`dirname $1.md`
+  for file in $(cd $WIKI_PATH/$d; find . -maxdepth 1 -type f)
+  do
+    f=${file##*/}
+    ext=${f##*.}
+    case $ext in
+      png|jpg|pdf|pptx|ppt|docx|doc|xlsx|xls) line=$line' ['$f']('$WIKI_URL/$d/$file')' ;;
+    esac
+  done
+  if [[ -n $line ]] ; then
+    echo 'Attatchments: '$line
+    print_rule
+  fi
+}
+
 function show_page_editor
 {
   print_rule
@@ -161,6 +179,7 @@ function show_page_editor
   echo '</textarea><hr />'
   echo '<input type="submit" id="submit" value="Publish"></form>'
   echo '<script> document.getElementById("content").focus(); </script>'
+  show_attachments $1
   (cd $WIKI_PATH; cat $1.md)
 }
 
