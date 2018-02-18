@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -evx
 
 # Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
 #
@@ -16,12 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MARKDOWN_BIN=subsh/markdown
-#MARKDOWN_BIN=subsh/discount
+DATA_PATH=../data
+WIKI_PATH=../contents
 
-WIKI_PATH=/home/shoji/public_html/wish/wiki
-WIKI_URL=/~shoji/wish/wiki
-DATA_PATH=/home/shoji/public_html/wish/data
-CGI_URL=/~shoji/wish/wi.cgi
+CGI_URL=$SCRIPT_NAME  # given by http server
+WIKI_URL=${SCRIPT_NAME%/*/*}/contents
 
 function decode_query
 {
@@ -77,14 +76,14 @@ function show_static_pages_list
 {
   typeset file
   typeset page
-  echo '[&mdash; Home &mdash;]('$WIKI_URL'/Home.html)'
+  echo '[&mdash; Home &mdash;]('$STATIC_WIKI_URL'/Home.html)'
   for file in $(cd $WIKI_PATH; find . -name \*.md)
   do
     page=${file#./}
     page=${page%%.md}
     if [[ $page != Home ]]
     then
-      echo '['$page']('$WIKI_URL'/'$page.html')'
+      echo '['$page']('$STATIC_WIKI_URL'/'$page.html')'
     fi
   done
 }
@@ -120,10 +119,9 @@ function relative_path
 function static_relative_path
 {
   D=`dirname  $1`
-  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($WIKI_URL/$D/\\2)%g" \
-      -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${WIKI_URL}/\\1.html)%g"
+  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($STATIC_WIKI_URL/$D/\\2)%g" \
+      -e "s%]($STATIC_WIKI_URL/$D/\\(.*\\).md)%](${STATIC_WIKI_URL}/\\1.html)%g"
 }
-
 
 function show_page_content
 {
@@ -335,8 +333,10 @@ then
   run_CGI
 elif [[ $1 == --generate-static ]]
 then
+  STATIC_WIKI_URL=${2:-/~your_name/wiki_directory} # example
   generate_static
+
 else
-  echo 'Usage: wi.cgi --generate-static (or run as CGI)'
+  echo 'Usage: wi.cgi --generate-static /~your_name/wiki_directory (or run as CGI)'
   exit 1
 fi
