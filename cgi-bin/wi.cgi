@@ -159,11 +159,17 @@ function show_attachments
     ext=${f##*.}
     if [[ $ext != md ]] && [[ $ext != html ]]
     then
-      line=$line' ['$f']('$WIKI_URL/$d/$file')'
+      line=$line'<tr><td><input type="checkbox" name="files2del" value="'$d/$f'" /></td><td><a href="'$WIKI_URL/$d/$f'">'$f'</td></tr>'
     fi
   done
   if [[ -n $line ]] ; then
-    echo 'Attatchments: '$line
+    print_rule
+    echo 'Attatchments: '
+    echo "<form action='$CGI_URL' method='post' enctype='multipart/form-data'>"
+    echo '<input type="hidden" name="cmd" value="delattach">'
+    echo '<input type="hidden" name="page" value="'$1'">'
+    echo '<table>'$line'</table>'
+    echo '<input type="submit" value="delete"/></form>'
     print_rule
   fi
 }
@@ -237,6 +243,11 @@ function show_page
       delete_page $page
       show_pages_list
       show_page_content Home 'cat $WIKI_PATH/Home.md'
+      ;;
+    POST+delattach)
+      page=$(get_value "$2" page)
+      show_pages_list
+      show_page_editor $page
       ;;
     POST+publish)
       page=$(get_value "$2" page)
@@ -339,10 +350,22 @@ function run_CGI
     line=`cat $tmpfile | wc -l | cut -d' ' -f1`
     cmd=$(sed -n 4p $tmpfile | sed 's/\r$//g')
     page=$(sed -n 8p $tmpfile | sed 's/\r$//g')
-    filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
     dir=`dirname $page`
-    sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
-    sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+    if [[ $cmd = attach ]]
+    then
+      filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
+      sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
+      sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+    elif [[ $cmd = delattach ]]
+    then
+      i=12
+      while [ $i -le $line ]; do
+        filename=$(sed -n ${i}p $tmpfile | sed 's%\r$%%g')
+        rm -f $WIKI_PATH/$dir/$filename
+        echo "deleted : $filename"
+        i=$(( i + 4 ))
+      done
+    fi
     rm -f $tmpfile
     query="page=$page"
   else
