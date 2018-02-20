@@ -6,7 +6,6 @@
 
     <!-- stylesheet from here -->
     <style type="text/css">
-    <!--
       body {
         font-family: sans-serif;
         background-color: #ffffff;
@@ -42,7 +41,6 @@
         background-color: #222222;
         color: #ffffff;
       }
-    //-->
     </style>
 
     <!-- javascript from here -->

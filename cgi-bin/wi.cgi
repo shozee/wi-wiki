@@ -157,9 +157,10 @@ function show_attachments
   do
     f=${file##*/}
     ext=${f##*.}
-    case $ext in
-      png|jpg|pdf|pptx|ppt|docx|doc|xlsx|xls) line=$line' ['$f']('$WIKI_URL/$d/$file')' ;;
-    esac
+    if [[ $ext != md ]] && [[ $ext != html ]]
+    then
+      line=$line' ['$f']('$WIKI_URL/$d/$file')'
+    fi
   done
   if [[ -n $line ]] ; then
     echo 'Attatchments: '$line
@@ -250,8 +251,14 @@ function show_page
       show_pages_list
       show_page_content $page 'cat $WIKI_PATH/$1.md'
       ;;
+    POST+attach)
+      page=$(get_value "$2" page)
+      show_pages_list
+      show_page_content $page 'cat $WIKI_PATH/$1.md'
+      ;;
     *)
       show_pages_list
+      echo "$1" 
       print_error_query
       ;;
   esac
@@ -281,6 +288,12 @@ function show_page_controls
   echo '<input type="hidden" name="cmd" value="delete">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Delete"></form>'
+  echo '</td><td>'
+  echo "<form action='$CGI_URl' method='post' enctype='multipart/form-data'>"
+  echo '<input type="hidden" name="cmd" value="attach">'
+  echo '<input type="hidden" name="page" value="'$1'">'
+  echo '<input type="file"   name="attachfile">'
+  echo '<input type="submit" value="Attach"></form>'
   echo '</tr></td></table>'
 }
 
@@ -317,10 +330,21 @@ function run_CGI
   echo Content-Type: text/html
   echo
   cat $DATA_PATH/HEADER
-  if [[ $REQUEST_METHOD == GET ]]
-  then
+  if [[ $REQUEST_METHOD == GET ]] ; then
     cmd=$(get_value "$QUERY_STRING" cmd)
     cmd=${cmd:-get}
+  elif [[ $CONTENT_TYPE =~ multipart ]] ; then
+    tmpfile=$(mktemp)
+    cat > $tmpfile
+    line=`cat $tmpfile | wc -l | cut -d' ' -f1`
+    cmd=$(sed -n 4p $tmpfile | sed 's/\r$//g')
+    page=$(sed -n 8p $tmpfile | sed 's/\r$//g')
+    filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
+    dir=`dirname $page`
+    sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
+    sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+    rm -f $tmpfile
+    query="page=$page"
   else
     query=`cat` # get stdin
     cmd=$(get_value "$query" cmd)
@@ -354,7 +378,6 @@ elif [[ $1 == --generate-static ]]
 then
   STATIC_WIKI_URL=${2:-/~your_name/wiki_directory} # example
   generate_static
-
 else
   echo 'Usage: wi.cgi --generate-static /~your_name/wiki_directory (or run as CGI)'
   exit 1
