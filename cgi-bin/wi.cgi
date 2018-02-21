@@ -159,18 +159,16 @@ function show_attachments
     ext=${f##*.}
     if [[ $ext != md ]] && [[ $ext != html ]]
     then
-      line=$line'<tr><td><input type="checkbox" name="files2del" value="'$d/$f'" /></td><td><a href="'$WIKI_URL/$d/$f'">'$f'</td></tr>'
+      line=$line'<tr><td><input type="checkbox" name="files2del" value="'$f'" /></td><td><a href="'$WIKI_URL/$d/$f'">'$f'</td></tr>'
     fi
   done
   if [[ -n $line ]] ; then
-    print_rule
     echo 'Attatchments: '
     echo "<form action='$CGI_URL' method='post' enctype='multipart/form-data'>"
     echo '<input type="hidden" name="cmd" value="delattach">'
     echo '<input type="hidden" name="page" value="'$1'">'
     echo '<table>'$line'</table>'
     echo '<input type="submit" value="delete"/></form>'
-    print_rule
   fi
 }
 
@@ -183,11 +181,34 @@ function show_page_editor
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<textarea name="content" id="content" cols="100" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false};">'
   (cd $WIKI_PATH; cat $1.md)
-  echo '</textarea><hr />'
+  echo '</textarea><br />'
   echo '<input type="submit" id="submit" value="Publish"></form>'
   echo '<script> document.getElementById("content").focus(); </script>'
+
+  echo '<hr />'
+  echo '<table><tr><td>'
+  echo "<form action='$CGI_URL' method='get'>"
+  echo '<input type="hidden" name="cmd" value="history">'
+  echo '<input type="hidden" name="page" value="'$1'">'
+  echo '<input type="submit" value="History"></form>'
+  echo '</td><td>'
+  echo "<form action='$CGI_URL' method='post'>"
+  echo '<input type="hidden" name="cmd" value="delete">'
+  echo '<input type="hidden" name="page" value="'$1'">'
+  echo '<input type="submit" value="Delete"></form>'
+  echo '</td><td>'
+  echo "<form action='$CGI_URl' method='post' enctype='multipart/form-data'>"
+  echo '<input type="hidden" name="cmd" value="attach">'
+  echo '<input type="hidden" name="page" value="'$1'">'
+  echo '<input type="file"   name="attachfile">'
+  echo '<input type="submit" value="Attach"></form>'
+  echo '</td></tr></table>'
+  echo '<hr />'
+
   show_attachments $1
+  print_rule
   (cd $WIKI_PATH; cat $1.md)
+
 }
 
 function show_create_page
@@ -244,7 +265,7 @@ function show_page
       show_pages_list
       show_page_content Home 'cat $WIKI_PATH/Home.md'
       ;;
-    POST+delattach)
+    POST+attach|POST+delattach)
       page=$(get_value "$2" page)
       show_pages_list
       show_page_editor $page
@@ -259,11 +280,6 @@ function show_page
     POST+create)
       page=$(get_value "$2" page)
       create_page $page
-      show_pages_list
-      show_page_content $page 'cat $WIKI_PATH/$1.md'
-      ;;
-    POST+attach)
-      page=$(get_value "$2" page)
       show_pages_list
       show_page_content $page 'cat $WIKI_PATH/$1.md'
       ;;
@@ -289,23 +305,7 @@ function show_page_controls
   echo '<input type="hidden" name="cmd" value="edit">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Edit"></form>'
-  echo '</td><td>'
-  echo "<form action='$CGI_URL' method='get'>"
-  echo '<input type="hidden" name="cmd" value="history">'
-  echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<input type="submit" value="History"></form>'
-  echo '</td><td>'
-  echo "<form action='$CGI_URL' method='post'>"
-  echo '<input type="hidden" name="cmd" value="delete">'
-  echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<input type="submit" value="Delete"></form>'
-  echo '</td><td>'
-  echo "<form action='$CGI_URl' method='post' enctype='multipart/form-data'>"
-  echo '<input type="hidden" name="cmd" value="attach">'
-  echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<input type="file"   name="attachfile">'
-  echo '<input type="submit" value="Attach"></form>'
-  echo '</tr></td></table>'
+  echo '</td></tr></table>'
 }
 
 function create_page
@@ -353,23 +353,27 @@ function run_CGI
     dir=`dirname $page`
     if [[ $cmd = attach ]]
     then
-      filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
-      sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
-      sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+      if [ $line -ge 15 ]; then
+        filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
+        sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
+        sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+        chmod 606 $WIKI_PATH/$dir/$filename
+        echo "attached :  $filename"
+      fi
     elif [[ $cmd = delattach ]]
     then
       i=12
       while [ $i -le $line ]; do
         filename=$(sed -n ${i}p $tmpfile | sed 's%\r$%%g')
         rm -f $WIKI_PATH/$dir/$filename
-        echo "deleted : $filename"
+        echo "deleted :  $filename"
         i=$(( i + 4 ))
       done
     fi
     rm -f $tmpfile
     query="page=$page"
   else
-    query=`cat` # get stdin
+    query=`cat | sed 's%\r%%g'` # get stdin
     cmd=$(get_value "$query" cmd)
   fi
   show_page $REQUEST_METHOD+$cmd "$query" | $MARKDOWN_BIN
