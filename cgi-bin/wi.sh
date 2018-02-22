@@ -1,4 +1,4 @@
-#!/bin/bash -evx
+#!/bin/bash -p
 
 # Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
 #
@@ -312,12 +312,12 @@ function create_page
 {
   D=`dirname  $1`
   F=`basename $1`.md
-  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; git add $D/$F; git commit -m "Create $1") >/dev/null
+  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; chmod 644 $1.md ; git add $D/$F; git commit -m "Create $1") >/dev/null
 }
 
 function publish_content
 {
-  (cd $WIKI_PATH; echo "$2" >$1.md; git add $1.md; git commit -m "Publish $1") >/dev/null
+  (cd $WIKI_PATH; echo "$2" >$1.md; chmod 644 $1.md ; git add $1.md; git commit -m "Publish $1") >/dev/null
 }
 
 function print_history
@@ -357,7 +357,7 @@ function run_CGI
         filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
         sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
         sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
-        chmod 606 $WIKI_PATH/$dir/$filename
+        chmod 644 $WIKI_PATH/$dir/$filename
         echo "attached :  $filename"
       fi
     elif [[ $cmd = delattach ]]
