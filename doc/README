@@ -1,90 +1,103 @@
-  Wi! wiki
-============
+異動wikiについて
+================
 
-Ultra-minimalistic wiki written in Bash. Very small, just a single CGI
-script.  All the content of the wiki is stored in a Git repository, each
-article is saved as a separated text file in Markdown syntax. It is so
-simple that it doesn't have any user management (KISS philosophy).
+はじめに
+--------
 
+ディレクトリ構造を持ったテキストドキュメント作成に向いたwikiエンジンです。
+次のような特徴があります。
 
- Features
-----------
-
-- Dead-simple
-- File-based using a Git repository
-- Content optionally generated statically
-- Markdown syntax
-
-
- Dependencies
---------------
-
-- Bash
-- Git
-- Markdown-to-HTML converter like: markdown, python-markdown, ...
-- Web server with CGI support
+- [markdown](https://ja.wikipedia.org/wiki/Markdown)記法
+  - 書きやすくて、読みやすい
+  - 書いたドキュメントを他の用途に再利用するためのツールが豊富
+- シンプル
+  - wikiエンジンは400行程度のbashスクリプト
+    - 保守も改変も自由自在
+  - wikiコンテンツはテキストファイル
+  - ページの履歴管理やマージはgitまかせ
+- ポータブル
+  - cgiが実行可能なサーバなら大体どこでも動くと思います
+  - サーバが無くてもw3mでローカルアクセスしたり、エディタで直接編集できます
+- サステイナブル
+  - wikiのコンテンツとエンジンが独立
+  - wikiが死んでも、あなたの作成したドキュメントフォルダは混じり気の無い形で残ります
 
 
- Install
----------
-
-Create a Git repository with read/write permission for the CGI script
-and accesible by the web server, then copy all the Wi! wiki files to
-that repository. Symlink or copy wi.sh to your CGIs directory.
-
-If you want, you can reuse the Wi! wiki source code repository for the
-wiki content, but maybe is a good idea to create a new branch `wiki' to
-keep it well organized.
-
-Look at the top of wi.sh to customize three variables: Markdown program
-name, location of the wiki repository and the CGI URL path (the last two
-are relative paths to the web server root).
-
-Could be a good idea to create an URL alias in your web server like
-this:
-
-	http://host.com/cgi-bin/wi.sh -> http://host.com/wiki
-
-
- Usage
--------
-
-Apart from the CGI functionality, you can run the next command to create
-a static version of the wiki content:
-
-	wi.sh --generate-static
-
-This is useful for a cron job to replicate statically the content of the
-wiki every day.
-
-It's highly recommended to run the CGI as a dedicated user for such
-task, as the shell script CGIs are always in danger of exploitation.
-
-If you find unpleasant the idea of a public wiki with no user
-management, just put the wiki in some hidden place and show to the
-public the static version.
-
-Note: the `Undo' button is just a `git reset --hard HEAD^' on the
-      repository, so be careful because it is going to destroy commits
-      one by one.
-
-
- Project status
+ディレクトリ構造
 ----------------
 
-Version 1.2 finished.
+```
+  ├── cgi-bin/
+  │   ├── subsh
+  │   │   └── markdown   ... markdownパーサ
+  │   └── wi.sh          ... wiki本体
+  ├── contents/          ... wikiコンテンツ格納ディレクトリ
+  │   ├── Home.md
+  │   ├── public/
+  │   │   └── note1.md
+  │   ├── private/
+  │   │   └── note2.md
+  ├── data/              ... html作成のための部品置き場
+  │   ├── FOOTER
+  │   └── HEADER
+  ├── doc/               ... GPLのお約束など
+  │   ├── COPYING
+  │   └── README
+  └── wrapper/           ... webからアクセスしたときのパーミッション設定に必要なラッパ
+      ├── Makefile
+      └── wiki.c
+```
+
+インストール手順
+----------------
+
+1. subsh/以下にmarkdown形式からhtml形式へ変換するパーサを置きます。
+   標準で、markdown創始者の[John Gruberのperlスクリプト](https://daringfireball.net/projects/markdown/)を使うようになっていますので、これで良いなら特に作業は必要ありません。
+   sundownなど、別のものに変えても良いと思います。
+2. apacheからcgiアクセスを考えている人はwrapper/の下でmakeして出来るバイナリ実行ファイルをcgi-bin以下にコピーしてください。
+   出来たバイナリに対してchmod u+sも必要です。バイナリの中で、setuidしてからwi.shを実行しています。
+   こうすると、webからcgiアクセスした時にファイルの所有者が"apache"だったり、"www-data"になったりするのを避けることが出来ます。apache側でsuExecの設定などがされている場合は不要です。
+3. mkdir contentsして、以下に管理したいリポジトリごとにgit initして下さい。
+4. 以上です！
 
 
- License
----------
+ユーザー管理
+------------
 
-The program is under the GPLv3.
+cgi-bin以下のディレクトリに.htpasswd, .htdigestなどと.htaccessを置いて認証をかけてください。
 
 
- Feedback
-----------
+開発のきっかけ
+--------------
 
-Feel free to send me an email if you have any question about the code,
-you found a bug or you have a feature request. Send it to:
+日頃から、得た知見を文書にして残すことは大切だと思っています。記憶力ゼロの自分のために。後世のために。
+特に、失敗したことが、なぜ失敗したかを分析して書き残しされているものを見ると、血の通った、生きた知見として、なるほどなるほど、と身にしみることがあります。
 
-	jimenezrick@gmail.com
+こうした知見の共有にwikiはとても向いていると思います。
+オンラインで共同作成するドキュメント、というコンセプトが好きです。
+私自身、十年超の職歴の中でたくさんwikiを使ってきました。
+グループで共有して使うもの、私個人で使ったりしたものもありました。
+
+ただし、長年使った経験から、問題点いくつか分かってきました。
+
+まず、webサーバーは定期的に更新されます。
+wikiエンジンが特定のバージョンのスクリプト言語やデータベースに依存する、といった場合は計算機間の移行が困難です。
+引っ越すの大変だし、古いwikiだから要らないよね、と移行されないまま世を去るwikiを何個か目にしました。移行をやる方(やらされる方)は大変なので、強い必要が無い限り移行を避ける気持ちは理解します。自分も計算機担当した経験があるので。
+ただ、*計算機の賞味期限切れ*と*知見の賞味期限切れ*を一緒には出来ないと思うのです。昔の人(失礼！)の知恵から学ぶこは多い。もし貴重なドキュメントが計算機の都合で失なわれてしまうとしたら、ちょっと悲しいし、組織にとっては財産の消失だと思うのです。
+このwikiは高機能だから、と安易に最新のwikiシステムへの移行を繰り返すと、これにはまると思います。
+
+そこで、ドキュメントを生成するための道具と、ドキュメント自体とを、*独立*にできれば良いなと思うようになりました。
+前者は移ろいますが、後者は時代を問わず通用するものが時としてあります。このwikiが動かないとドキュメントが見られない、という事を避けたい。
+思えば、知見の共有、という目的だけに限れば、言葉や図が残っていれば良いのでテキストや画像ファイル以外のものは本来不要でしょう。それだけならファイルのコピーで済むので移植も容易です。
+
+独立性からは安心感も生まれます。wikiが死んでも最悪ドキュメントは残る、という安心感があればしっかり書き残す気がおきますし、また、書いたものは自分のためにも取っておきたい、となるのでは。
+
+計算機に限らず、人もまた、定期的に異動するもので、
+私自身、あちこち(海外含む)動く、根無し草なので、そのうち所属するグループごとのwikiだけじゃなくて自分用のポータブルなメモ作成システムが欲しいと思うようになりました。
+欲ばりですが、個人に属するドキュメントと、オンラインで他者と協力して作っているドキュメントが一緒くたに扱えると良いなと思いました。ドキュメントの分散管理です。例えば、自分用のメモを共有用に整形して転載するのが容易なように、同じwikiの中で、個人ドキュメントと、グループのメンバーとの共有ドキュメントが同居しつつ、別リポジトリとしてgit管理されて、片方は共有リポジトリと同期、もう片方は個人リポジトリと同期しているような状態が理想です。
+
+すでに書いていますが、今はgitという便利なものがありますので、これをドキュメントの履歴管理や同期のためのツールとしてありがたく使わせていただきつつ、自分のしたいことをミニマムに実装してみたのが本wikiになります。
+ドキュメントの入ったgitリポジトリを、リポジトリの外から操作するだけの簡単なcgiです。
+もともと、[Wi! wiki](https://github.com/jimenezrick/wi-wiki)というGPLソフトウェアがあって、これに対して日本語化やファイル添付機能、相対ディレクトリ参照などの機能を追加しています。bashで書かれていたので、誰でも理解できて移植もしやすい点で一目惚れしましたが、本家の更新が止まっているのが残念。でも問題ありません。たかだか数百行のbashなので、誰でも理解してメンテナンスできます。
+
+以上、駄文ですが、これを見て、いやいやもっとドキュメント管理の仕方がある、と他の人が思って行動を起こせたなら、この文書自体も後世に貢献できたことになります。皆さん、良いドキュメントライフを。
