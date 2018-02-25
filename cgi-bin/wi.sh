@@ -1,4 +1,4 @@
-#!/bin/bash -p
+#!/bin/bash -pevx
 
 # Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
 #
@@ -15,9 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-MARKDOWN_BIN=subsh/markdown
 DATA_PATH=../data
 WIKI_PATH=../contents
+
+export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
+MARKDOWN_BIN=markdown
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
@@ -400,7 +402,7 @@ function generate_static
 
 if [[ $# == 0 ]]
 then
-  run_CGI
+  run_CGI 2> error.log
 elif [[ $1 == --generate-static ]]
 then
   STATIC_WIKI_URL=${2:-/~your_name/wiki_directory} # example
