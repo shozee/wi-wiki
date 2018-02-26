@@ -19,7 +19,7 @@ DATA_PATH=../data
 WIKI_PATH=../contents
 
 export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
-MARKDOWN_BIN=markdown
+MARKDOWN_BIN=discount
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
@@ -63,7 +63,7 @@ function show_pages_list
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$CGI_URL'?cmd=get&page=Home)'
-  for file in $(cd $WIKI_PATH; find . -name \*.md)
+  for file in $(cd $WIKI_PATH; ls -1 \*.md) $(cd $WIKI_PATH; ls -F -1 | grep '/$')
   do
     page=${file#./}
     page=${page%%.md}
@@ -79,7 +79,7 @@ function show_static_pages_list
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$STATIC_WIKI_URL'/Home.html)'
-  for file in $(cd $WIKI_PATH; find . -name \*.md)
+  for file in $(cd $WIKI_PATH; ls -1 \*.md) $(cd $WIKI_PATH; ls -F -1 | grep '/$')
   do
     page=${file#./}
     page=${page%%.md}
@@ -132,8 +132,15 @@ function show_page_content
     print_rule
     show_page_controls $1
     print_rule
-    echo '#' $1
+    echo '#' ${1##*/}
     eval "$2" | relative_path $1
+    print_rule
+  elif [[ -d $WIKI_PATH/$1 ]]
+  then
+    print_rule
+    show_page_controls $1
+    print_rule
+    cd $WIKI_PATH ; tree.sh $1 | relative_path $1
     print_rule
   else
     print_error_page $1
@@ -145,8 +152,13 @@ function show_static_page_content
   if [[ -r $WIKI_PATH/$1.md ]]
   then
     print_rule
-    echo '#' $1
+    echo '#' ${1##*/}
     cat $WIKI_PATH/$1.md | static_relative_path $1
+    print_rule
+  elif [[ -d $WIKI_PATH/$1 ]]
+  then
+    print_rule
+    cd $WIKI_PATH ; tree.sh $1 | static_relative_path $1
     print_rule
   fi
 }
