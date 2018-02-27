@@ -58,36 +58,28 @@ function print_error_query
   print_rule
 }
 
+function get_pages_list
+{
+  list=''
+  dir=`echo $1 | sed 's%/$%%g'`
+  for file in $(cd $WIKI_PATH/$dir; ls -1 | grep '.md$') $(cd $WIKI_PATH/$dir; ls -F -1 | grep '/$')
+  do
+    page=${file#./}
+    page=${page%%.md}
+    if [[ $page != Home ]]
+    then
+      list="$list "'['$page']('$CGI_URL'?cmd=get&page='$dir/$page')'
+    fi
+  done
+  echo "$list"
+}
+
 function show_pages_list
 {
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$CGI_URL'?cmd=get&page=Home)'
-  for file in $(cd $WIKI_PATH; ls -1 \*.md) $(cd $WIKI_PATH; ls -F -1 | grep '/$')
-  do
-    page=${file#./}
-    page=${page%%.md}
-    if [[ $page != Home ]]
-    then
-      echo '['$page']('$CGI_URL'?cmd=get&page='$page')'
-    fi
-  done
-}
-
-function show_static_pages_list
-{
-  typeset file
-  typeset page
-  echo '[&mdash; Home &mdash;]('$STATIC_WIKI_URL'/Home.html)'
-  for file in $(cd $WIKI_PATH; ls -1 \*.md) $(cd $WIKI_PATH; ls -F -1 | grep '/$')
-  do
-    page=${file#./}
-    page=${page%%.md}
-    if [[ $page != Home ]]
-    then
-      echo '['$page']('$STATIC_WIKI_URL'/'$page.html')'
-    fi
-  done
+  get_pages_list .
 }
 
 function show_search
@@ -118,13 +110,6 @@ function relative_path
       -e "s%]($WIKI_URL/$D/\\(.*\\).md)%](${CGI_URL}?cmd=get\&page=$D/\\1)%g"
 }
 
-function static_relative_path
-{
-  D=`dirname  $1`
-  sed -e "s%\\[\\(.*\\)\\](\\([^:]*\\))%[\\1]($STATIC_WIKI_URL/$D/\\2)%g" \
-      -e "s%]($STATIC_WIKI_URL/$D/\\(.*\\).md)%](${STATIC_WIKI_URL}/\\1.html)%g"
-}
-
 function show_page_content
 {
   if [[ -r $WIKI_PATH/$1.md ]]
@@ -132,7 +117,6 @@ function show_page_content
     print_rule
     show_page_controls $1
     print_rule
-    echo '#' ${1##*/}
     eval "$2" | relative_path $1
     print_rule
   elif [[ -d $WIKI_PATH/$1 ]]
@@ -140,26 +124,10 @@ function show_page_content
     print_rule
     show_page_controls $1
     print_rule
-    cd $WIKI_PATH ; tree.sh $1 | relative_path $1
+    get_pages_list $1 | sed 's/ /\n- /g'
     print_rule
   else
     print_error_page $1
-  fi
-}
-
-function show_static_page_content
-{
-  if [[ -r $WIKI_PATH/$1.md ]]
-  then
-    print_rule
-    echo '#' ${1##*/}
-    cat $WIKI_PATH/$1.md | static_relative_path $1
-    print_rule
-  elif [[ -d $WIKI_PATH/$1 ]]
-  then
-    print_rule
-    cd $WIKI_PATH ; tree.sh $1 | static_relative_path $1
-    print_rule
   fi
 }
 
@@ -394,32 +362,5 @@ function run_CGI
   cat $DATA_PATH/FOOTER
 }
 
-function generate_static
-{
-  typeset page
-  typeset file_markdown
-  typeset file_html
-  for file_markdown in $(cd $WIKI_PATH ; find . -name \*.md)
-  do
-    page=${file_markdown#./}
-    page=${page%%.md}
-    file_html=$page.html
-    cat $DATA_PATH/HEADER > $WIKI_PATH/$file_html
-    show_static_pages_list | $MARKDOWN_BIN >> $WIKI_PATH/$file_html
-    show_static_page_content $page | $MARKDOWN_BIN >> $WIKI_PATH/$file_html
-    cat $DATA_PATH/FOOTER >> $WIKI_PATH/$file_html
-    echo $file_html generated
-  done
-}
-
-if [[ $# == 0 ]]
-then
-  run_CGI 2> error.log
-elif [[ $1 == --generate-static ]]
-then
-  STATIC_WIKI_URL=${2:-/~your_name/wiki_directory} # example
-  generate_static
-else
-  echo 'Usage: wi.cgi --generate-static /~your_name/wiki_directory (or run as CGI)'
-  exit 1
-fi
+# main 
+run_CGI 2> error.log
