@@ -1,4 +1,4 @@
-#!/bin/bash -pevx
+#!/bin/bash -pvx
 
 # Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
 #
@@ -19,7 +19,7 @@ DATA_PATH=../data
 WIKI_PATH=../contents
 
 export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
-MARKDOWN_BIN=discount
+MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
@@ -62,7 +62,8 @@ function get_pages_list
 {
   list=''
   dir=`echo $1 | sed 's%/$%%g'`
-  for file in $(cd $WIKI_PATH/$dir; ls -1 | grep '.md$') $(cd $WIKI_PATH/$dir; ls -F -1 | grep '/$')
+  for file in $(cd $WIKI_PATH/$dir; ls -1 | grep '.md$') \
+              $(cd $WIKI_PATH/$dir; ls -F -1 | grep '/$')
   do
     page=${file#./}
     page=${page%%.md}
@@ -162,7 +163,8 @@ function show_page_editor
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<textarea name="content" id="content" cols="100" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false};">'
-  (cd $WIKI_PATH; cat $1.md)
+  # Note: commonmark treats a blank line as a closing html tag. To avoid the parser converting .md contents inside the textarea, \n needs to be replaced with &#010; .
+  (cd $WIKI_PATH; cat $1.md | tr -d '\r' | sed -e ':loop; N; $!b loop; s/\n/\&#010;/g')
   echo '</textarea><br />'
   echo '<input type="submit" id="submit" value="Publish"></form>'
   echo '<script> document.getElementById("content").focus(); </script>'
@@ -254,7 +256,7 @@ function show_page
       ;;
     POST+publish)
       page=$(get_value "$2" page)
-      content=$(get_value "$2" content)
+      content=$(get_value "$2" content | tr -d '\r')
       publish_content $page "$content"
       show_pages_list
       show_page_content $page 'cat $WIKI_PATH/$1.md'
@@ -330,15 +332,15 @@ function run_CGI
     tmpfile=$(mktemp)
     cat > $tmpfile
     line=`cat $tmpfile | wc -l | cut -d' ' -f1`
-    cmd=$(sed -n 4p $tmpfile | sed 's/\r$//g')
-    page=$(sed -n 8p $tmpfile | sed 's/\r$//g')
+    cmd=$(sed -n 4p $tmpfile | tr -d '\r')
+    page=$(sed -n 8p $tmpfile | tr -d '\r')
     dir=`dirname $page`
     if [[ $cmd = attach ]]
     then
       if [ $line -ge 15 ]; then
         filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
         sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
-        sed -n $((line-1))p $tmpfile | sed 's%\r$%%g' >> $WIKI_PATH/$dir/$filename
+        sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
         chmod 644 $WIKI_PATH/$dir/$filename
         echo "attached :  $filename"
       fi
@@ -346,7 +348,7 @@ function run_CGI
     then
       i=12
       while [ $i -le $line ]; do
-        filename=$(sed -n ${i}p $tmpfile | sed 's%\r$%%g')
+        filename=$(sed -n ${i}p $tmpfile | tr -d '\r')
         rm -f $WIKI_PATH/$dir/$filename
         echo "deleted :  $filename"
         i=$(( i + 4 ))
@@ -355,7 +357,7 @@ function run_CGI
     rm -f $tmpfile
     query="page=$page"
   else
-    query=`cat | sed 's%\r%%g'` # get stdin
+    query=`cat | tr -d '\r'` # get stdin
     cmd=$(get_value "$query" cmd)
   fi
   show_page $REQUEST_METHOD+$cmd "$query" | $MARKDOWN_BIN
@@ -364,3 +366,4 @@ function run_CGI
 
 # main 
 run_CGI 2> error.log
+#run_CGI | tee tmp.html 2> error.log # debug
