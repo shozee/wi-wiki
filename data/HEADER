@@ -14,20 +14,29 @@
         margin: 4.0em;
         margin-left: 10.0em;
         margin-right: 10.0em;
-        line-height: 1.5em;
+        line-height: 1.2em;
       }
-
       h1 {
-        margin-left: 1.0em;
-        font-size: 3.0em;
+        font-size: 2.0em;
       }
-
+      h2 { 
+        padding: 0.3em;
+        color: #010101;
+        background: #eaf3ff;
+        border-bottom: solid 3px #516ab6;
+      }
+      h3 { 
+        padding: 0.25em 0.5em;
+        border-left: solid 5px #7db4e6;
+      }
+      h4 {
+        text-decoration: underline;
+      }
       hr {
         background-color: #000000;
         height: 2px;
         border: 0;
       }
-
       a {
         font-weight: bold;
         font-size: 1.1em;
@@ -37,10 +46,32 @@
         padding-left: 0.1em;
         padding-right: 0.1em;
       }
-
       a:hover {
         background-color: #222222;
         color: #ffffff;
+      }
+      pre {
+        padding: 0.3em;
+        margin-left: 20px;
+        background-color: #EEEEEE;
+        white-space: -moz-pre-wrap; /* Mozilla */
+        white-space: -pre-wrap;     /* Opera 4-6 */
+        white-space: -o-pre-wrap;   /* Opera 7 */
+        white-space: pre-wrap;      /* CSS3 */
+        word-wrap: break-word;      /* IE 5.5+ */
+      }
+      pre code {
+        font-family: monospace;
+        font-weight: normal;
+        text-align: left;
+        line-height: 80%;
+        margin-bottom: 10px;
+      }
+      p code {
+        padding: 0.3em;
+        font-family: monospace;
+        font-weight: normal;
+        background-color: #EEEEEE;
       }
     </style>
 
