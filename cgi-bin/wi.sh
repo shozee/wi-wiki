@@ -23,6 +23,7 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
+AUTHOR=${REMOTE_USER:-wiki user}
 
 function decode_query
 {
@@ -296,12 +297,12 @@ function create_page
 {
   D=`dirname  $1`
   F=`basename $1`.md
-  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; chmod 644 $1.md ; git add $D/$F; git commit -m "Create $1") >/dev/null
+  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; chmod 644 $1.md ; git add $D/$F; git commit --author="$AUTHOR" -m "Create $1") >/dev/null
 }
 
 function publish_content
 {
-  (cd $WIKI_PATH; echo "$2" >$1.md; chmod 644 $1.md ; git add $1.md; git commit -m "Publish $1") >/dev/null
+  (cd $WIKI_PATH; echo "$2" >$1.md; chmod 644 $1.md ; git add $1.md; git commit --author="$AUTHOR" -m "Publish $1") >/dev/null
 }
 
 function print_history
@@ -315,7 +316,7 @@ function print_history
 
 function delete_page
 {
-  (cd $WIKI_PATH; git rm -f $1.md; git commit -m "Delete $1") >/dev/null
+  (cd $WIKI_PATH; git rm -f $1.md; git commit --author="$AUTHOR" -m "Delete $1") >/dev/null
 }
 
 function run_CGI
