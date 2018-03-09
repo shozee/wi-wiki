@@ -23,7 +23,7 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
-AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/AUTHOR=\(.*\)/\1/g')
+AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*AUTHOR=\([^;]*\);.*/\1/g')
 [ -z $AUTHOR ] && AUTHOR=guest
 
 function decode_query
@@ -284,7 +284,7 @@ function show_page_controls
   echo '</td><td>'
   echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="get">'
-  if [ $AUTHOR != guest ]; then
+  if [ "$AUTHOR" != guest ]; then
     echo '</td><td>'
     echo '<input type="hidden" name="page" value="New">'
     echo '<input type="submit" value="New"></form>'
