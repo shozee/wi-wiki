@@ -157,19 +157,60 @@ function show_attachments
   fi
 }
 
+function show_preview_js
+{
+  cat <<EOF
+<script>
+function Preview() {
+    var xmlhttp = new XMLHttpRequest();  
+    var postdata = 'cmd=preview&content=' + encodeURIComponent(content.value);
+    try {
+        if (xmlhttp.readyState != 0) xmlhttp.abort();
+
+        xmlhttp.open("POST", '$CGI_URL', true);
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.responseText) {
+              document.getElementById('preview').innerHTML = xmlhttp.responseText;
+              MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+            }
+        }
+        xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xmlhttp.send(postdata);
+    } catch (e){
+        alert(e);
+    }
+}
+</script>
+EOF
+}
+
 function show_page_editor
 {
   print_rule
+  show_preview_js
   echo '#' $1
   echo "<form action='$CGI_URL' method='post'>"
+  echo '<table><tr><td valign="top">'
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
-  echo '<textarea name="content" id="content" cols="100" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false};">'
-  # Note: commonmark treats a blank line as a closing html tag. To avoid the parser converting .md contents inside the textarea, \n needs to be replaced with &#010; .
+  echo '<textarea name="content" id="content" cols="72" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){Preview();return false};">'
+  # Note: commonmark treats a blank line as a closing html tag.
+  #  To avoid the parser converting .md contents inside the textarea,
+  #   \n needs to be replaced with &#010; .
   (cd $WIKI_PATH; cat $1.md | tr -d '\r' | sed -e ':loop; N; $!b loop; s/\n/\&#010;/g')
   echo '</textarea><br />'
-  echo '<input type="submit" id="submit" value="Publish"></form>'
   echo '<script> document.getElementById("content").focus(); </script>'
+
+  echo '</td><td valign="top">'
+  echo '<div id="preview">'
+  (cd $WIKI_PATH; cat $1.md)
+  echo '</div>'
+  echo '</tr><tr><td>'
+  echo "<input type="submit" id="preview" onclick='Preview(); return false;' value='Preview'> ( press the button or Ctrl-Enter to preview )"
+  echo '</td><td>'
+  echo '<input type="submit" id="submit" value="Publish">'
+  echo '</td></tr></table>'
+  echo '</form>'
 
   echo '<hr />'
   echo '<table><tr><td>'
@@ -192,9 +233,6 @@ function show_page_editor
   echo '<hr />'
 
   show_attachments $1
-  print_rule
-  (cd $WIKI_PATH; cat $1.md)
-
 }
 
 function show_create_page
@@ -282,10 +320,9 @@ function show_page_controls
   echo '<table><tr><td>'
   show_search
   echo '</td><td>'
-  echo "<form action='$CGI_URL' method='get'>"
-  echo '<input type="hidden" name="cmd" value="get">'
   if [ "$AUTHOR" != guest ]; then
-    echo '</td><td>'
+    echo "<form action='$CGI_URL' method='get'>"
+    echo '<input type="hidden" name="cmd" value="get">'
     echo '<input type="hidden" name="page" value="New">'
     echo '<input type="submit" value="New"></form>'
     echo '</td><td>'
@@ -333,7 +370,11 @@ function run_CGI
   if [[ $REQUEST_METHOD == GET ]] ; then
     cmd=$(get_value "$QUERY_STRING" cmd)
     cmd=${cmd:-get}
-  elif [[ $CONTENT_TYPE =~ multipart ]] ; then
+    cat $DATA_PATH/HEADER
+    show_page GET+$cmd "" | $MARKDOWN_BIN
+    cat $DATA_PATH/FOOTER
+
+  elif [[ $REQUEST_METHOD == POST && $CONTENT_TYPE =~ multipart ]] ; then
     tmpfile=$(mktemp)
     cat > $tmpfile
     line=`cat $tmpfile | wc -l | cut -d' ' -f1`
@@ -360,15 +401,27 @@ function run_CGI
       done
     fi
     rm -f $tmpfile
+
     query="page=$page"
+    cat $DATA_PATH/HEADER
+    show_page POST+$cmd "$query" | $MARKDOWN_BIN
+    cat $DATA_PATH/FOOTER
+
   else
     query=`cat | tr -d '\r'` # get stdin
     cmd=$(get_value "$query" cmd)
+    if [[ $cmd == preview ]]
+    then
+      content=$(get_value "$query" content | tr -d '\r')
+      echo "$content" | $MARKDOWN_BIN
+    else
+      cat $DATA_PATH/HEADER
+      show_page POST+$cmd "$query" | $MARKDOWN_BIN
+      cat $DATA_PATH/FOOTER
+    fi
   fi
-  show_page $REQUEST_METHOD+$cmd "$query" | $MARKDOWN_BIN
-  cat $DATA_PATH/FOOTER
 }
 
-# main 
+# main
 run_CGI 2> error.log
 #run_CGI | tee tmp.html 2> error.log # debug

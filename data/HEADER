@@ -39,7 +39,6 @@
       }
       a {
         font-weight: bold;
-        font-size: 1.1em;
         background-color: #00bfff;
         color: #ffffff;
         text-decoration: none;
