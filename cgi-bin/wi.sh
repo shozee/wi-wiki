@@ -142,18 +142,19 @@ function show_attachments
   do
     f=${file##*/}
     ext=${f##*.}
-    if [[ $ext != md ]] && [[ $ext != html ]]
+    if [[ $ext != md ]]
     then
-      line=$line'<tr><td><input type="checkbox" name="files2del" value="'$f'" /></td><td><a href="'$WIKI_URL/$d/$f'">'$f'</td></tr>'
+      line=$line'<tr><td><input type="checkbox" name="files2del" value="'$f'" /></td>'
+      line=$line'<td><a href="'$WIKI_URL/$d/$f'">'$f'</td></tr>'
     fi
   done
   if [[ -n $line ]] ; then
     echo 'Attatchments: '
-    echo "<form action='$CGI_URL' method='post' enctype='multipart/form-data'>"
+    echo '<form action='$CGI_URL' method='post' enctype='multipart/form-data' name="delattach">'
     echo '<input type="hidden" name="cmd" value="delattach">'
     echo '<input type="hidden" name="page" value="'$1'">'
     echo '<table>'$line'</table>'
-    echo '<input type="submit" value="delete"/></form>'
+    echo '<input type="submit" onclick="delattach_func(); return false;" value="delete"/></form>'
   fi
 }
 
@@ -166,7 +167,6 @@ function Preview() {
     var postdata = 'cmd=preview&content=' + encodeURIComponent(content.value);
     try {
         if (xmlhttp.readyState != 0) xmlhttp.abort();
-
         xmlhttp.open("POST", '$CGI_URL', true);
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.responseText) {
@@ -179,6 +179,30 @@ function Preview() {
     } catch (e){
         alert(e);
     }
+}
+</script>
+EOF
+}
+
+function show_ajax_js
+{
+  formname=$1
+  domname=$2
+  cat <<EOF
+<script>
+function ${formname}_func() {
+  var form = document.forms.namedItem("$formname");
+  oData = new FormData(form);
+  var oReq = new XMLHttpRequest();
+  oReq.open("POST", '$CGI_URL', true);
+  oReq.onload = function(oEvent) {
+    if (oReq.status == 200) {
+      document.getElementById('$domname').innerHTML = oReq.responseText;
+    } else {
+      document.getElementById('$domname').innerHTML = "process failed";
+    }
+  };
+  oReq.send(oData);
 }
 </script>
 EOF
@@ -224,15 +248,21 @@ function show_page_editor
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="submit" value="Delete"></form>'
   echo '</td><td>'
-  echo "<form action='$CGI_URl' method='post' enctype='multipart/form-data'>"
+  echo "<form action='$CGI_URl' method='post' enctype='multipart/form-data' name='attach'>"
   echo '<input type="hidden" name="cmd" value="attach">'
   echo '<input type="hidden" name="page" value="'$1'">'
   echo '<input type="file"   name="attachfile">'
-  echo '<input type="submit" value="Attach"></form>'
+  echo "<input type="submit" onclick='attach_func(); return false;' value='Attach'></form>"
   echo '</td></tr></table>'
   echo '<hr />'
 
+  echo '<div id="attachments">'
   show_attachments $1
+  echo '</div>'
+
+  show_ajax_js "attach"    "attachments"
+  show_ajax_js "delattach" "attachments"
+
 }
 
 function show_create_page
@@ -288,11 +318,6 @@ function show_page
       delete_page $page
       show_pages_list
       show_page_content Home 'cat $WIKI_PATH/Home.md'
-      ;;
-    POST+attach|POST+delattach)
-      page=$(get_value "$2" page)
-      show_pages_list
-      show_page_editor $page
       ;;
     POST+publish)
       page=$(get_value "$2" page)
@@ -388,8 +413,9 @@ function run_CGI
         sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
         sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
         chmod 644 $WIKI_PATH/$dir/$filename
-        echo "attached :  $filename"
+        echo "attached :  $filename" | $MARKDOWN_BIN
       fi
+      show_attachments $page
     elif [[ $cmd = delattach ]]
     then
       i=12
@@ -399,13 +425,9 @@ function run_CGI
         echo "deleted :  $filename"
         i=$(( i + 4 ))
       done
+      show_attachments $page
     fi
     rm -f $tmpfile
-
-    query="page=$page"
-    cat $DATA_PATH/HEADER
-    show_page POST+$cmd "$query" | $MARKDOWN_BIN
-    cat $DATA_PATH/FOOTER
 
   else
     query=`cat | tr -d '\r'` # get stdin
