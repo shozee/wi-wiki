@@ -1,4 +1,4 @@
-#!/bin/bash -pvx
+#!/bin/bash -pevx
 
 # Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
 #
@@ -23,8 +23,22 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
-AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*AUTHOR=\([^;]*\);.*/\1/g')
-[ -z $AUTHOR ] && AUTHOR=guest
+AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*WISH_AUTHOR=\([^;]*\).*/\1/g')
+AUTHOR=${AUTHOR-=guest}
+
+function git_cmd
+{
+  case $1 in
+    add) 
+      chmod 644 $2
+      git add -f $2
+      ;;
+    rm) 
+      git rm -f $2
+      ;;
+  esac
+  git commit --author="$AUTHOR" -m "$3"
+}
 
 function decode_query
 {
@@ -217,6 +231,7 @@ function show_page_editor
 
   echo '<hr />'
 
+  # buttons
   echo '<table><tr><td>'
   echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="history">'
@@ -344,18 +359,21 @@ function create_page
 {
   D=`dirname  $1`
   F=`basename $1`.md
-  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; touch $D/$F; chmod 644 $1.md ; git add $D/$F; git commit --author="$AUTHOR" -m "Create $1") >/dev/null
+  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; cd $D ; touch $F; git_cmd add $F "Create $1") >/dev/null
 }
 
 function publish_content
 {
-  (cd $WIKI_PATH; echo "$2" >$1.md; chmod 644 $1.md ; git add $1.md; git commit --author="$AUTHOR" -m "Publish $1") >/dev/null
+  D=`dirname  $1`
+  F=`basename $1`.md
+  (cd $WIKI_PATH/$D ; echo "$2" > $F ; git_cmd add $F "Publish $1") >/dev/null
 }
 
 function print_history
 {
-  typeset line
-  (cd $WIKI_PATH; git log -p -n 10 $1.md) | while read line
+  D=`dirname  $1`
+  F=`basename $1`.md
+  (cd $WIKI_PATH/$D; git log -p -n 10 $F) | while read line
   do
     echo -e "\t$line"
   done
@@ -363,7 +381,9 @@ function print_history
 
 function delete_page
 {
-  (cd $WIKI_PATH; git rm -f $1.md; git commit --author="$AUTHOR" -m "Delete $1") >/dev/null
+  D=`dirname  $1`
+  F=`basename $1`.md
+  (cd $WIKI_PATH/$D; git_cmd rm $F "Delete $1") >/dev/null
 }
 
 function run_CGI
@@ -380,7 +400,7 @@ function run_CGI
     show_page GET+$cmd "" | $MARKDOWN_BIN
     cat $DATA_PATH/FOOTER
 
-  elif [[ $REQUEST_METHOD == POST && $CONTENT_TYPE =~ multipart ]] ; then
+  elif [[ $CONTENT_TYPE =~ multipart ]] ; then
     tmpfile=$(mktemp)
     cat > $tmpfile
     line=`cat $tmpfile | wc -l | cut -d' ' -f1`
@@ -394,6 +414,7 @@ function run_CGI
         sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
         sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
         chmod 644 $WIKI_PATH/$dir/$filename
+        (cd $WIKI_PATH/$dir ; git_cmd add $filename "Attach $filename")
         echo "attached :  $filename" | $MARKDOWN_BIN
       fi
       show_attachments $page
@@ -402,7 +423,7 @@ function run_CGI
       i=12
       while [ $i -le $line ]; do
         filename=$(sed -n ${i}p $tmpfile | tr -d '\r')
-        rm -f $WIKI_PATH/$dir/$filename
+        (cd $WIKI_PATH/$dir ; git_cmd rm $filename "Delete $filename")
         echo "deleted :  $filename"
         i=$(( i + 4 ))
       done

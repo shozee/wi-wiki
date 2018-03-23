@@ -3,7 +3,7 @@ WIKI_DIR=${SCRIPT_NAME%/*/*}
 WIKI_CGI=$WIKI_DIR/wiki.cgi
 
 echo "Content-Type: text/html"
-echo "Set-Cookie: AUTHOR=${REMOTE_USER:-guest}; path=$WIKI_DIR; max-age=2592000;"
+echo "Set-Cookie: WISH_AUTHOR=${REMOTE_USER:-guest}; path=$WIKI_DIR; max-age=2592000;"
 echo
 echo '<html><body>'
 if [ -r .htaccess ]; then
