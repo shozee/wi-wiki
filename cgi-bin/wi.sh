@@ -23,8 +23,11 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
-AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*WISH_AUTHOR=\([^;]*\).*/\1/g')
-AUTHOR=${AUTHOR-=guest}
+if [ "$HTTP_COOKIE" =~ "WISH_AUTHOR" ]; then
+  AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*WISH_AUTHOR=\([^;]*\).*/\1/g')
+else
+  AUTHOR=guest
+fi
 
 function git_cmd
 {
@@ -63,7 +66,7 @@ function print_rule
 function print_error_page
 {
   print_rule
-  echo '# ERROR: page' $1 'not found'
+  echo $1
   print_rule
 }
 
@@ -144,7 +147,7 @@ function show_page_content
     get_pages_list $1 | sed 's/ /\n- /g'
     print_rule
   else
-    print_error_page $1
+    print_error_page "# ERROR: page $1 not found"
   fi
 }
 
@@ -318,9 +321,13 @@ function show_page
     POST+publish)
       page=$(get_value "$2" page)
       content=$(get_value "$2" content | tr -d '\r')
-      publish_content $page "$content"
-      show_pages_list
-      show_page_content $page 'cat $WIKI_PATH/$1.md'
+      if [ "$AUTHOR" = "guest" ]; then
+        print_error_page "Could not use COOKIE. Please Log in"
+      else
+        publish_content $page "$content"
+        show_pages_list
+        show_page_content $page 'cat $WIKI_PATH/$1.md'
+      fi
       ;;
     POST+create)
       page=$(get_value "$2" page)
