@@ -23,7 +23,7 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
-if [ "$HTTP_COOKIE" =~ "WISH_AUTHOR" ]; then
+if [[ "$HTTP_COOKIE" =~ "WISH_AUTHOR" ]]; then
   AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*WISH_AUTHOR=\([^;]*\).*/\1/g')
 else
   AUTHOR=guest
@@ -209,7 +209,7 @@ function show_page_editor
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
   # Top-Left: textarea
-  echo '<textarea name="content" id="content" cols="72" rows="30" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false};">'
+  echo '<textarea name="content" id="content" cols="120" rows="60" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false}else if(event.altKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false}">'
   # Note: commonmark treats a blank line as a closing html tag.
   #  To avoid the parser converting .md contents inside the textarea,
   #   \n needs to be replaced with &#010; .
@@ -359,6 +359,8 @@ function show_page_controls
     echo '<input type="hidden" name="page" value="'$1'">'
     echo '<input type="submit" value="Edit"></form>'
   fi
+  echo "</td><td>"
+  echo "LOGIN: $AUTHOR"
   echo '</td></tr></table>'
 }
 
