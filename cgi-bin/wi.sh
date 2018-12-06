@@ -137,7 +137,10 @@ function show_page_content
     print_rule
     show_page_controls $1
     print_rule
+    echo "<div class='printable'>"
+    echo
     eval "$2" | relative_path $1
+    echo "</div>"
     print_rule
   elif [[ -d $WIKI_PATH/$1 ]]
   then
@@ -198,6 +201,21 @@ function ${formname}_async() {
 }
 </script>
 EOF
+}
+function show_print_js
+{
+  cat<<EOF
+<script>
+  function PrintScript(){
+  htmlcode = window.document.body.innerHTML;
+  prnhtml  = document.getElementsByClassName("printable")[0].innerHTML;
+  window.document.body.innerHTML = prnhtml;
+  window.print();
+  window.document.body.innerHTML = htmlcode;
+  }
+</script>
+EOF
+
 }
 
 function show_page_editor
@@ -359,6 +377,9 @@ function show_page_controls
     echo '<input type="hidden" name="page" value="'$1'">'
     echo '<input type="submit" value="Edit"></form>'
   fi
+  echo '</td><td>'
+  show_print_js
+  echo '<input type="submit" value="Print" onclick="PrintScript();">'
   echo "</td><td>"
   echo "LOGIN: $AUTHOR"
   echo '</td></tr></table>'
