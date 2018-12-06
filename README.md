@@ -52,8 +52,8 @@
 
 1. subsh/以下にmarkdown形式からhtml形式へ変換するパーサを置きます。
    標準で[John Gruberのperlスクリプト](https://daringfireball.net/projects/markdown/)を使うようになっていますので、これで良いなら特に作業は必要ありません。
-   sundownなど、別のものに変えても良いと思います。
-2. apacheからcgiアクセスを考えている人はwrapper/の下でmakeして出来るバイナリ実行ファイルをcgi-bin以下にコピーしてください。
+   md4c(https://github.com/mity/md4c)など、別のものに変えても良いと思います。
+2. apacheからcgiアクセスを考えている人はwrapper/の下でmakeして出来るバイナリ実行ファイルwiki.cgiをcgi-bin/にコピーしてください。
    出来たバイナリに対してchmod u+sも必要です。バイナリの中で、setuidしてからwi.shを実行しています。
    こうすると、webからcgiアクセスした時にファイルの所有者が"apache"だったり、"www-data"になったりするのを避けることが出来ます。apache側でsuExecの設定などがされている場合はこのステップは不要です。
 3. mkdir contentsして、cointens/以下に管理したいリポジトリごとにgit initやgit cloneして下さい。
