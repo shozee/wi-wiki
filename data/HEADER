@@ -72,6 +72,16 @@
         font-weight: normal;
         background-color: #EEEEEE;
       }
+      td {
+        border: solid 1px;
+      }
+      th {
+        border: solid 1px;
+        background: #DDDDDD;
+      }
+      table {
+        border-collapse: collapse;
+      }
     </style>
 
     <!-- javascript from here -->
