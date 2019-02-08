@@ -17,6 +17,7 @@
 
 DATA_PATH=../data
 WIKI_PATH=../contents
+PRIVATE_DIR=Private
 
 export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
 MARKDOWN_BIN="md2html --github --ftables"
@@ -86,8 +87,11 @@ function get_pages_list
   do
     page=${file#./}
     page=${page%%.md}
-    if [[ $page != Home ]]
-    then
+    if [ $page = Home ]; then
+      continue
+    elif [ z$AUTHOR = "zguest" -a $page = "${PRIVATE_DIR}/" ]; then
+      continue
+    else
       list="$list "'['$page']('$CGI_URL'?cmd=get&page='$dir/$page')'
     fi
   done
