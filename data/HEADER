@@ -5,7 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Wi!</title>
 
-    <!-- stylesheet from here -->
+    <!-- ref. https://saruwakakun.com/html-css/reference/css-sample -->
+
     <style type="text/css">
       body {
         font-family: sans-serif;
@@ -15,18 +16,20 @@
         line-height: 1.2em;
       }
       h1 {
-        font-size: 2.0em;
+        font-size: 2.5em;
         line-height: 1.0em;
-      }
-      h2 { 
         padding: 0.3em;
-        color: #010101;
-        background: #eaf3ff;
-        border-bottom: solid 3px #516ab6;
       }
-      h3 { 
-        padding: 0.25em 0.5em;
-        border-left: solid 5px #7db4e6;
+      h2 {
+        font-size: 1.5em;
+        line-height: 1.0em;
+        padding: 0.3em;
+        border-bottom: solid 1px #516ab6;
+      }
+      h3 {
+        font-size: 1.2em;
+        line-height: 1.0em;
+        padding: 0.3em;
       }
       h4 {
         text-decoration: underline;
