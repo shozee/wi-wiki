@@ -12,12 +12,11 @@
         background-color: #ffffff;
         color: #222222;
         margin: 4.0em;
-        margin-left: 10.0em;
-        margin-right: 10.0em;
         line-height: 1.2em;
       }
       h1 {
         font-size: 2.0em;
+        line-height: 1.0em;
       }
       h2 { 
         padding: 0.3em;
@@ -96,7 +95,7 @@
     </script>
     -->
     <script type="text/javascript" async
-      src="http://intrasv.mri-jma.go.jp/~s_hirahara/Mathjax/MathJax.js?config=TeX-MML-AM_CHTML">
+      src="../../Mathjax/MathJax.js?config=TeX-MML-AM_CHTML">
     </script>
 
   </head>
