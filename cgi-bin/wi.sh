@@ -41,7 +41,9 @@ function git_cmd
       git rm -f $2
       ;;
   esac
+  set +e
   git commit --author="$AUTHOR" -m "$3"
+  set -e
 }
 
 function decode_query
