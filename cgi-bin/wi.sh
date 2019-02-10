@@ -112,7 +112,7 @@ function show_search
 {
   echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="search">'
-  echo '<input type="text" name="pattern" size="20" maxlength="100">'
+  echo '<input type="text" name="pattern" size="20">'
   echo '<input type="submit" value="Search"></form>'
 }
 
@@ -294,7 +294,7 @@ function show_create_page
   echo '#' Create new page:
   echo "<form action='$CGI_URL' method='post'>"
   echo '<input type="hidden" name="cmd" value="create">'
-  echo '<input type="text" name="page" size="20" maxlength="30">'
+  echo '<input type="text" name="page" size="20">'
   echo '<input type="submit" value="Create"></form>'
   print_rule
 }
