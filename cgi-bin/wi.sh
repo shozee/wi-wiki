@@ -42,7 +42,7 @@ function git_cmd
       ;;
   esac
   set +e
-  git commit --author="$AUTHOR" -m "$3"
+  git commit "--author=$AUTHOR" -m "$3"
   set -e
 }
 
@@ -51,11 +51,17 @@ function decode_query
   sed 's/%\([[:alnum:]][[:alnum:]]\)/\\x\1/g' | nkf -w --numchar-input | xargs --null printf
 }
 
+function escape_equation
+{
+  # sed '\{' to '\\{', '\}' to '\\}' and '\\' to '\\\\'
+  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g'
+}
+
 function get_value
 {
   if [[ -n $1 ]]; then
     query=$(echo -n "$1" | sed 's/\+/ /g' | sed -n "s/.*$2=\([^\&]*\).*/\1/p")
-    if [ -n $query ]; then
+    if [ -n "$query" ]; then
       echo $query | decode_query
     else
       echo ''
@@ -274,7 +280,7 @@ function show_page_editor
   # Note: commonmark treats a blank line as a closing html tag.
   #  To avoid the parser converting .md contents inside the textarea,
   #   \n needs to be replaced with &#010; .
-  (cd $WIKI_PATH; cat $1.md | tr -d '\r' | sed -e ':loop; N; $!b loop; s/\n/\&#010;/g')
+  (cd $WIKI_PATH; cat $1.md | tr -d '\r' | sed -e ':loop; N; $!b loop; s/\n/\&#010;/g ; s/\\/\&#x5c;/g ')
   echo '</textarea><br />'
   echo '<script> document.getElementById("content").focus(); </script>'
 
@@ -435,8 +441,8 @@ function show_page_controls
 
 function create_page
 {
-  D=$1
-  F=$2.md
+  D=$(dirname  $1/$2)
+  F=$(basename $2).md
   (cd $WIKI_PATH; test -d $D || mkdir -p $D ; cd $D ; touch $F; git_cmd add $F "Create $1") >/dev/null
 }
 
@@ -475,7 +481,7 @@ function run_CGI
     cmd=$(get_value "$QUERY_STRING" cmd)
     cmd=${cmd:-get}
     cat $DATA_PATH/HEADER
-    show_page GET+$cmd "" | $MARKDOWN_BIN
+    show_page GET+$cmd "" | escape_equation | $MARKDOWN_BIN
     cat $DATA_PATH/FOOTER
 
   elif [[ $CONTENT_TYPE =~ multipart ]] ; then
@@ -493,7 +499,7 @@ function run_CGI
         sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
         chmod 644 $WIKI_PATH/$dir/$filename
         (cd $WIKI_PATH/$dir ; git_cmd add $filename "Attach $filename")
-        echo "attached :  $filename" | $MARKDOWN_BIN
+        echo "attached :  $filename" | escape_equation | $MARKDOWN_BIN
       fi
       show_attachments $page
     elif [[ $cmd = delattach ]]
@@ -508,7 +514,7 @@ function run_CGI
       show_attachments $page
     elif [[ $cmd = publish ]]  # live preview
     then
-      sed -n 12,$((line-1))p $tmpfile | tr -d '\r' | $MARKDOWN_BIN
+      sed -n 12,$((line-1))p $tmpfile | tr -d '\r' | escape_equation | $MARKDOWN_BIN
     fi
     rm -f $tmpfile
 
