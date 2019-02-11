@@ -54,7 +54,12 @@ function decode_query
 function get_value
 {
   if [[ -n $1 ]]; then
-    echo -n "$1" | sed 's/\+/ /g' | sed -n "s/.*$2=\([^\&]*\).*/\1/p" | decode_query
+    query=$(echo -n "$1" | sed 's/\+/ /g' | sed -n "s/.*$2=\([^\&]*\).*/\1/p")
+    if [ -n $query ]; then
+      echo $query | decode_query
+    else
+      echo ''
+    fi
   else
     echo ''
   fi
@@ -80,7 +85,7 @@ function print_error_query
   print_rule
 }
 
-function get_pages_list
+function print_pages_link
 {
   list=''
   dir=`echo $1 | sed 's%/$%%g'`
@@ -100,12 +105,44 @@ function get_pages_list
   echo "$list"
 }
 
+function get_parent_dir
+{
+  page=$1
+  parent_dir=${page%/*}
+  test -d $WIKI_PATH/$parent_dir || parent_dir=$(dirname "$parent_dir")
+  echo "$parent_dir"
+}
+
+function print_tree_link
+{
+  if [ -f $WIKI_PATH/$1.md ]; then
+    page=$(basename $1)
+  else
+    page=''
+  fi
+
+  list=''
+  pdir=$1
+  for I in `seq 10` ; do          # maxdepth=10
+    [ -z "$pdir"  ] && break
+    pdir=$(get_parent_dir $pdir)
+    [ $pdir = "." ] && break
+    cdir=$(basename $pdir)
+    list='['$cdir'/]('$CGI_URL'?cmd=get&page='$pdir')'" $list "
+    [ $pdir = $cdir ] && break
+  done
+  echo "$list $page"
+}
+
 function show_pages_list
 {
   typeset file
   typeset page
   echo '[&mdash; Home &mdash;]('$CGI_URL'?cmd=get&page=Home)'
-  get_pages_list .
+  print_pages_link .
+  page=$(get_value "$QUERY_STRING" page)
+  echo "<br /> at: "
+  print_tree_link $page
 }
 
 function show_search
@@ -153,7 +190,7 @@ function show_page_content
     print_rule
     show_page_controls $1
     print_rule
-    get_pages_list $1 | sed 's/ /\n- /g'
+    print_pages_link $1 | sed 's/ /\n- /g'
     print_rule
   else
     print_error_page "# ERROR: page $1 not found"
@@ -288,15 +325,6 @@ function show_page_editor
 
 }
 
-function get_parent_dir
-{
-  query_string=$1
-  parent_page=$(get_value "$query_string" parent_page | sed 's|%2F|/|g')
-  parent_dir=${parent_page%/*}
-  test -d $WIKI_PATH/$parent_dir || parent_dir=$(dirname "$parent_dir")
-  echo "$parent_dir"
-}
-  
 function show_create_page
 {
   print_rule
@@ -320,7 +348,8 @@ function show_page
       page=$(get_value "$QUERY_STRING" page)
       if [[ $page == New ]]
       then
-        parent_dir=$(get_parent_dir "$QUERY_STRING")
+        previous_page=$(get_value "$QUERY_STRING" previous_page | sed 's|%2F|/|g')
+        parent_dir=$(get_parent_dir "$previous_page")
         show_pages_list
         show_create_page ${parent_dir}
       else
@@ -387,7 +416,7 @@ function show_page_controls
   if [ "$AUTHOR" != guest ]; then
     echo "<form action='$CGI_URL' method='get'>"
     echo '<input type="hidden" name="cmd" value="get">'
-    echo '<input type="hidden" name="parent_page" value="'$1'">'
+    echo '<input type="hidden" name="previous_page" value="'$1'">'
     echo '<input type="hidden" name="page" value="New">'
     echo '<input type="submit" value="New"></form>'
     echo '</td><td>'
