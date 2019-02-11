@@ -91,7 +91,7 @@ function get_pages_list
     page=${page%%.md}
     if [ $page = Home ]; then
       continue
-    elif [ z$AUTHOR = "zguest" -a $page = "${PRIVATE_DIR}/" ]; then
+    elif [ z"$AUTHOR" = "zguest" -a $page = "${PRIVATE_DIR}/" ]; then
       continue
     else
       list="$list "'['$page']('$CGI_URL'?cmd=get&page='$dir/$page')'
@@ -288,13 +288,23 @@ function show_page_editor
 
 }
 
+function get_parent_dir
+{
+  query_string=$1
+  parent_page=$(get_value "$query_string" parent_page | sed 's|%2F|/|g')
+  parent_dir=${parent_page%/*}
+  test -d $WIKI_PATH/$parent_dir || parent_dir=$(dirname "$parent_dir")
+  echo "$parent_dir"
+}
+  
 function show_create_page
 {
   print_rule
-  echo '#' Create new page:
+  echo "Create new page under $1/:"
   echo "<form action='$CGI_URL' method='post'>"
   echo '<input type="hidden" name="cmd" value="create">'
-  echo '<input type="text" name="page" size="20">'
+  echo "<input type='hidden' name='parent_dir' value='$1'>"
+  echo "<input type='text' name='page' size='20'>"
   echo '<input type="submit" value="Create"></form>'
   print_rule
 }
@@ -310,8 +320,9 @@ function show_page
       page=$(get_value "$QUERY_STRING" page)
       if [[ $page == New ]]
       then
+        parent_dir=$(get_parent_dir "$QUERY_STRING")
         show_pages_list
-        show_create_page
+        show_create_page ${parent_dir}
       else
         show_pages_list
         show_page_content ${page:-Home} 'cat $WIKI_PATH/$1.md'
@@ -354,10 +365,11 @@ function show_page
       fi
       ;;
     POST+create)
+      parent_dir=$(get_value "$2" parent_dir)
       page=$(get_value "$2" page)
-      create_page $page
+      create_page $parent_dir $page
       show_pages_list
-      show_page_content $page 'cat $WIKI_PATH/$1.md'
+      show_page_content $parent_dir/$page 'cat $WIKI_PATH/$1.md'
       ;;
     *)
       show_pages_list
@@ -375,6 +387,7 @@ function show_page_controls
   if [ "$AUTHOR" != guest ]; then
     echo "<form action='$CGI_URL' method='get'>"
     echo '<input type="hidden" name="cmd" value="get">'
+    echo '<input type="hidden" name="parent_page" value="'$1'">'
     echo '<input type="hidden" name="page" value="New">'
     echo '<input type="submit" value="New"></form>'
     echo '</td><td>'
@@ -393,8 +406,8 @@ function show_page_controls
 
 function create_page
 {
-  D=`dirname  $1`
-  F=`basename $1`.md
+  D=$1
+  F=$2.md
   (cd $WIKI_PATH; test -d $D || mkdir -p $D ; cd $D ; touch $F; git_cmd add $F "Create $1") >/dev/null
 }
 
