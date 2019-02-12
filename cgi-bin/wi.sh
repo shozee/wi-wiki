@@ -276,7 +276,7 @@ function show_page_editor
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
   # Top-Left: textarea
-  echo '<textarea name="content" id="content" cols="120" rows="60" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false}else if(event.altKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false}">'
+  echo '<textarea name="content" id="content" rows=20 style="overflow-y:scroll; width:95%;" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false}else if(event.altKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false}">'
   # Note: commonmark treats a blank line as a closing html tag.
   #  To avoid the parser converting .md contents inside the textarea,
   #   \n needs to be replaced with &#010; .
@@ -284,18 +284,17 @@ function show_page_editor
   echo '</textarea><br />'
   echo '<script> document.getElementById("content").focus(); </script>'
 
-  echo '</td><td valign="top">'
+  echo '</td></tr><tr><td valign="top">'
   # Top-Right: preview pane
-  echo '<div id="preview">'
+  echo '<div id="preview" style="overflow:auto; height:20em">'
   (cd $WIKI_PATH; cat $1.md)
   echo '</div>'
-  echo '</tr><tr><td>'
+  echo '</td></tr><tr><td>'
   # Top-Left: preview button
   echo "<input type="submit" id="preview" onclick='publish_async(); return false;' value='Preview'>"
-  echo "( press the button or Ctrl-Enter to preview )"
-  echo '</td><td>'
-  # Top-Right: pulish button
+  echo '( press the button or Ctrl-Enter to preview )'
   echo '<input type="submit" id="submit" value="Publish">'
+  echo '( press the button or Alt-Enter to publish )'
   echo '</td></tr></table>'
   echo '</form>'
 
