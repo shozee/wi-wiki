@@ -62,7 +62,7 @@ function get_value
   if [[ -n $1 ]]; then
     query=$(echo -n "$1" | sed 's/\+/ /g' | sed -n "s/.*$2=\([^\&]*\).*/\1/p")
     if [ -n "$query" ]; then
-      echo $query | decode_query
+      echo "$query" | decode_query
     else
       echo ''
     fi
