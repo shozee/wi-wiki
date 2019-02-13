@@ -140,6 +140,11 @@ function print_tree_link
   echo "$list $page"
 }
 
+function print_url_resetter
+{
+  echo '<script type="text/javascript"> window.location.href=window.location.href+"?cmd=get&page='$1'"; </script>'
+}
+
 function show_pages_list
 {
   typeset file
@@ -522,6 +527,8 @@ function run_CGI
     cmd=$(get_value "$query" cmd)
     cat $DATA_PATH/HEADER
     show_page POST+$cmd "$query" | $MARKDOWN_BIN
+    page=$(get_value "$query" page)
+    print_url_resetter $page
     cat $DATA_PATH/FOOTER
   fi
 }
