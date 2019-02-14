@@ -42,7 +42,7 @@ function git_cmd
       ;;
   esac
   set +e
-  git commit "--author=$AUTHOR" -m "$3"
+  git commit --author="$AUTHOR" -m "$3"
   set -e
 }
 
@@ -53,8 +53,11 @@ function decode_query
 
 function escape_equation
 {
-  # sed '\{' to '\\{', '\}' to '\\}' and '\\' to '\\\\'
-  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g'
+  #  '\{' to '\\{', '\}' to '\\}'
+  #  '\' to '\\'
+  #  '*'  to '\*'
+  #  '_'  to '\_'
+  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g;s%_%\\_%g'
 }
 
 function get_value
@@ -447,7 +450,7 @@ function create_page
 {
   D=$(dirname  $1/$2)
   F=$(basename $2).md
-  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; cd $D ; touch $F; git_cmd add $F "Create $1") >/dev/null
+  (cd $WIKI_PATH; test -d $D || mkdir -p $D ; cd $D ; touch $F; git_cmd add $F "Create $1/$2") >/dev/null
 }
 
 function publish_content
