@@ -57,7 +57,8 @@ function escape_equation
   #  '\' to '\\'
   #  '*'  to '\*'
   #  '_'  to '\_'
-  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g;s%_%\\_%g'
+#  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g;s%_%\\_%g'
+  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g'
 }
 
 function get_value
@@ -537,5 +538,5 @@ function run_CGI
 }
 
 # main
-run_CGI 2> error.log
+run_CGI 2>> error.log
 #run_CGI | tee tmp.html 2> error.log # debug
