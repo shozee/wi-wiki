@@ -395,6 +395,7 @@ function show_page
       delete_page $page
       show_pages_list
       show_page_content Home 'cat $WIKI_PATH/Home.md'
+      print_url_resetter Home
       ;;
     POST+publish)
       page=$(get_value "$2" page)
@@ -406,6 +407,7 @@ function show_page
         show_pages_list
         show_page_content $page 'cat $WIKI_PATH/$1.md'
       fi
+      print_url_resetter $page
       ;;
     POST+create)
       parent_dir=$(get_value "$2" parent_dir)
@@ -413,6 +415,7 @@ function show_page
       create_page $parent_dir $page
       show_pages_list
       show_page_content $parent_dir/$page 'cat $WIKI_PATH/$1.md'
+      print_url_resetter $parent_dir/$page
       ;;
     *)
       show_pages_list
@@ -526,13 +529,11 @@ function run_CGI
     fi
     rm -f $tmpfile
 
-  else
+  else # POST
     query=`cat | tr -d '\r'` # get stdin
     cmd=$(get_value "$query" cmd)
     cat $DATA_PATH/HEADER
     show_page POST+$cmd "$query" | $MARKDOWN_BIN
-    page=$(get_value "$query" page)
-    print_url_resetter $page
     cat $DATA_PATH/FOOTER
   fi
 }
