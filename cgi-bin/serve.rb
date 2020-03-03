@@ -1,3 +1,3 @@
 #!/usr/bin/env ruby
-require 'webrick' 
+require 'webrick'
 WEBrick::HTTPServer.new(:DocumentRoot => "./", :Port => 8000).start
