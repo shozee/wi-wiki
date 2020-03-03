@@ -1,6 +1,6 @@
 #!/bin/bash -pevx
 
-# Copyright (C) 2010-2011 Ricardo Catalinas Jiménez <jimenezrick@gmail.com>
+# Copyright (C) 2010-2011 Ricardo Catalinas Jimenez <jimenezrick@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,25 +24,20 @@ MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
 WIKI_URL=${SCRIPT_NAME%/*/*}/contents
-if [[ "$HTTP_COOKIE" =~ "WISH_AUTHOR" ]]; then
-  AUTHOR=$(echo "$HTTP_COOKIE" | sed 's/.*WISH_AUTHOR=\([^;]*\).*/\1/g')
-else
-  AUTHOR=guest
-fi
 
 function git_cmd
 {
   case $1 in
-    add) 
+    add)
       chmod 644 $2
       git add -f $2
       ;;
-    rm) 
+    rm)
       git rm -f $2
       ;;
   esac
   set +e
-  git commit --author="$AUTHOR" -m "$3"
+  git commit -m "$3"
   set -e
 }
 
@@ -105,8 +100,6 @@ function print_pages_link
     page=${file#./}
     page=${page%%.md}
     if [ $page = Home ]; then
-      continue
-    elif [ z"$AUTHOR" = "zguest" -a $page = "${PRIVATE_DIR}/" ]; then
       continue
     else
       list="$list "'['$page']('$CGI_URL'?cmd=get&page='$dir/$page')'
@@ -400,13 +393,9 @@ function show_page
     POST+publish)
       page=$(get_value "$2" page)
       content=$(get_value "$2" content | tr -d '\r')
-      if [ "$AUTHOR" = "guest" ]; then
-        print_error_page "Could not use COOKIE. Please Log in"
-      else
-        publish_content $page "$content"
-        show_pages_list
-        show_page_content $page 'cat $WIKI_PATH/$1.md'
-      fi
+      publish_content $page "$content"
+      show_pages_list
+      show_page_content $page 'cat $WIKI_PATH/$1.md'
       print_url_resetter $page
       ;;
     POST+create)
@@ -430,23 +419,21 @@ function show_page_controls
   echo '<table><tr><td>'
   show_search
   echo '</td><td>'
-  if [ "$AUTHOR" != guest ]; then
-    echo "<form action='$CGI_URL' method='get'>"
-    echo '<input type="hidden" name="cmd" value="get">'
-    echo '<input type="hidden" name="previous_page" value="'$1'">'
-    echo '<input type="hidden" name="page" value="New">'
-    echo '<input type="submit" value="New"></form>'
-    echo '</td><td>'
-    echo "<form action='$CGI_URL' method='get'>"
-    echo '<input type="hidden" name="cmd" value="edit">'
-    echo '<input type="hidden" name="page" value="'$1'">'
-    echo '<input type="submit" value="Edit"></form>'
-  fi
+
+  echo "<form action='$CGI_URL' method='get'>"
+  echo '<input type="hidden" name="cmd" value="get">'
+  echo '<input type="hidden" name="previous_page" value="'$1'">'
+  echo '<input type="hidden" name="page" value="New">'
+  echo '<input type="submit" value="New"></form>'
+  echo '</td><td>'
+  echo "<form action='$CGI_URL' method='get'>"
+  echo '<input type="hidden" name="cmd" value="edit">'
+  echo '<input type="hidden" name="page" value="'$1'">'
+  echo '<input type="submit" value="Edit"></form>'
+
   echo '</td><td>'
   show_print_js
   echo '<input type="submit" value="Print" onclick="PrintScript();">'
-  echo "</td><td>"
-  echo "LOGIN: $AUTHOR"
   echo '</td></tr></table>'
 }
 
@@ -540,4 +527,4 @@ function run_CGI
 
 # main
 run_CGI 2>> error.log
-#run_CGI | tee tmp.html 2> error.log # debug
+#REQUEST_METHOD=GET run_CGI | tee tmp.html 2> error.log # debug
