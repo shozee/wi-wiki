@@ -153,7 +153,7 @@ function show_pages_list
   print_tree_link $page
 }
 
-function show_search
+function show_search_bar
 {
   echo "<form action='$CGI_URL' method='get'>"
   echo '<input type="hidden" name="cmd" value="search">'
@@ -165,9 +165,16 @@ function show_search_results
 {
   typeset result
   echo '#' Search: $1
+  # file content
   (cd $WIKI_PATH; egrep --include=*.md -r -i "$1") | while read result
   do
     echo "$result" | sed -e "s%\\(.*\\).md:%[\1]($CGI_URL?cmd=get\&page=\1): %g"
+    echo
+  done
+  # file name
+  (cd $WIKI_PATH; find . -name *$1*) | while read result
+  do
+    echo "$result" | sed -e "s%./\\(.*\\).md%[\1]($CGI_URL?cmd=get\&page=\1)%g"
     echo
   done
 }
@@ -368,7 +375,7 @@ function show_page
       pattern=$(get_value "$QUERY_STRING" pattern)
       show_pages_list
       print_rule
-      show_search
+      show_search_bar
       print_rule
       show_search_results "$pattern"
       print_rule
@@ -408,7 +415,7 @@ function show_page
       ;;
     *)
       show_pages_list
-      echo "$1" 
+      echo "$1"
       print_error_query
       ;;
   esac
@@ -417,7 +424,7 @@ function show_page
 function show_page_controls
 {
   echo '<table><tr><td>'
-  show_search
+  show_search_bar
   echo '</td><td>'
 
   echo "<form action='$CGI_URL' method='get'>"
