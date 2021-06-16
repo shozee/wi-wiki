@@ -17,7 +17,6 @@
 
 DATA_PATH=../data
 WIKI_PATH=../contents
-PRIVATE_DIR=Private
 
 export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
 MARKDOWN_BIN="md2html --github --ftables"
@@ -52,7 +51,6 @@ function escape_equation
   #  '\' to '\\'
   #  '*'  to '\*'
   #  '_'  to '\_'
-#  sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g;s%_%\\_%g'
   sed -r 's%\\\\%\\\\\\\\%g;s%\\\{%\\\\\{%g;s%\\\}%\\\\\}%g;s%[*]%\\*%g'
 }
 
@@ -475,10 +473,44 @@ function delete_page
   (cd $WIKI_PATH/$D; git_cmd rm $F "Delete $1") >/dev/null
 }
 
+function handle_multipart
+{
+  tmpfile=$1
+  line=`cat $tmpfile | wc -l | cut -d' ' -f1`
+  cmd=$(sed -n 4p $tmpfile | tr -d '\r')
+  page=$(sed -n 8p $tmpfile | tr -d '\r')
+  dir=`dirname $page`
+
+  case $cmd in
+    attach)
+      if [ $line -ge 15 ]; then
+        filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
+        sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
+        sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
+        chmod 644 $WIKI_PATH/$dir/$filename
+        (cd $WIKI_PATH/$dir ; git_cmd add $filename "Attach $filename")
+        echo "attached :  $filename" | escape_equation | $MARKDOWN_BIN
+      fi
+      show_attachments $page
+      ;;
+    delattach)
+      i=12
+      while [ $i -le $line ]; do
+        filename=$(sed -n ${i}p $tmpfile | tr -d '\r')
+        (cd $WIKI_PATH/$dir ; git_cmd rm $filename "Delete $filename")
+        echo "deleted :  $filename"
+        i=$(( i + 4 ))
+      done
+      show_attachments $page
+      ;;
+    publish) # live preview
+      sed -n 12,$((line-1))p $tmpfile | tr -d '\r' | escape_equation | $MARKDOWN_BIN
+      ;;
+  esac
+}
+
 function run_CGI
 {
-  typeset cmd
-  typeset query
   echo Content-Type: text/html
   echo
   cat $DATA_PATH/HEADER
@@ -492,35 +524,7 @@ function run_CGI
   elif [[ $CONTENT_TYPE =~ multipart ]] ; then
     tmpfile=$(mktemp)
     cat > $tmpfile
-    line=`cat $tmpfile | wc -l | cut -d' ' -f1`
-    cmd=$(sed -n 4p $tmpfile | tr -d '\r')
-    page=$(sed -n 8p $tmpfile | tr -d '\r')
-    dir=`dirname $page`
-    if [[ $cmd = attach ]]
-    then
-      if [ $line -ge 15 ]; then
-        filename=$(sed -n 10p $tmpfile | sed 's%.*filename="\(.*\)".*%\1%g')
-        sed -n 13,$((line-2))p $tmpfile > $WIKI_PATH/$dir/$filename
-        sed -n $((line-1))p $tmpfile | tr -d '\r' >> $WIKI_PATH/$dir/$filename
-        chmod 644 $WIKI_PATH/$dir/$filename
-        (cd $WIKI_PATH/$dir ; git_cmd add $filename "Attach $filename")
-        echo "attached :  $filename" | escape_equation | $MARKDOWN_BIN
-      fi
-      show_attachments $page
-    elif [[ $cmd = delattach ]]
-    then
-      i=12
-      while [ $i -le $line ]; do
-        filename=$(sed -n ${i}p $tmpfile | tr -d '\r')
-        (cd $WIKI_PATH/$dir ; git_cmd rm $filename "Delete $filename")
-        echo "deleted :  $filename"
-        i=$(( i + 4 ))
-      done
-      show_attachments $page
-    elif [[ $cmd = publish ]]  # live preview
-    then
-      sed -n 12,$((line-1))p $tmpfile | tr -d '\r' | escape_equation | $MARKDOWN_BIN
-    fi
+    handle_multipart $tmpfile
     rm -f $tmpfile
 
   else # POST
