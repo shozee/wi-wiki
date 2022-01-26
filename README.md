@@ -2,6 +2,7 @@
 ================
 
 ディレクトリ構造を持ったドキュメント作成に向いたwikiエンジンです。
+[jimenezrick/wi-wiki](https://github.com/jimenezrick/wi-wiki)から分岐しています。
 次のような特徴があります。
 
 - [markdown](https://ja.wikipedia.org/wiki/Markdown)記法
@@ -21,8 +22,8 @@
 ```
   ├── cgi-bin/
   │   ├── subsh
-  │   │   └── markdown   ... markdownパーサ
-  │   └── wi.sh          ... wiki本体
+  │   │   └── md2html    ... markdownパーサ
+  │   └── wiki.cgi       ... wiki本体
   ├── contents/          ... wikiコンテンツ格納ディレクトリ(以下は一例)
   │   ├── Home.md
   │   ├── dir1/
@@ -44,9 +45,10 @@
 ----------------
 
 1. subsh/以下にmarkdown形式からhtml形式へ変換するパーサを置きます。
-   標準で[John Gruberのperlスクリプト](https://daringfireball.net/projects/markdown/)を使うようになっていますので、これで良いなら特に作業は必要ありません。
-   md4c(https://github.com/mity/md4c.git)がおすすめです。
+   [John Gruberのperlスクリプト](https://daringfireball.net/projects/markdown/)を置いていますが、
+   md4c(https://github.com/mity/md4c.git)のmd2htmlの方が高機能なので標準設定でこちらを使うようになっています。
+   本レポジトリにはmd4cは含まれませんので別途取得する必要があります。
 2. contents/以下に管理したいリポジトリごとにgit initやgit cloneして下さい。コミットするユーザーの名前とemailの設定も必要です。
    $ git config --local user.name "user name"
    $ git config --local user.email user_name@example.com
-3. ブラウザからwiki.cgiにアクセスします。以上です！
+3. ブラウザからwiki.cgiにアクセスします。
