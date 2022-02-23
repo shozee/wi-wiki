@@ -18,7 +18,7 @@
 DATA_PATH=../data
 WIKI_PATH=../contents
 
-export PATH=${PWD}/subsh:${PATH} # put nkf in subsh/ if you haven't got it
+export PATH="${PWD}/subsh:${PATH}" # put nkf in subsh/ if you haven't got it
 MARKDOWN_BIN="md2html --github --ftables"
 
 CGI_URL=$SCRIPT_NAME  # given by http server
@@ -284,7 +284,7 @@ function show_page_editor
   echo '<input type="hidden" name="cmd" value="publish">'
   echo '<input type="hidden" name="page" value="'$1'">'
   # Top-Left: textarea
-  echo '<textarea name="content" id="content" rows=20 style="overflow-y:scroll; width:95%;" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false}else if(event.altKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false}">'
+  echo '<textarea name="content" id="content" rows="40" cols="200" width="50%" style="overflow-y:scroll; width:98%; height:30em;" onkeydown="if(event.ctrlKey&&event.keyCode==13){publish_async();return false}else if(event.altKey&&event.keyCode==13){document.getElementById('\''submit'\'').click();return false}">'
   # Note: commonmark treats a blank line as a closing html tag.
   #  To avoid the parser converting .md contents inside the textarea,
   #   \n needs to be replaced with &#010; .
@@ -292,12 +292,12 @@ function show_page_editor
   echo '</textarea><br />'
   echo '<script> document.getElementById("content").focus(); </script>'
 
-  echo '</td></tr><tr><td valign="top">'
+  echo '</td><td valign="top">'
   # Top-Right: preview pane
-  echo '<div id="preview" style="overflow:auto; height:20em">'
+  echo '<div id="preview" style="overflow:auto; height:30em">'
   (cd $WIKI_PATH; cat $1.md)
   echo '</div>'
-  echo '</td></tr><tr><td>'
+  echo '</td></tr><tr><td colspan="2">'
   # Top-Left: preview button
   echo "<input type="submit" id="preview" onclick='publish_async(); return false;' value='Preview'>"
   echo '( press the button or Ctrl-Enter to preview )'
