@@ -52,3 +52,14 @@
    $ git config --local user.name "user name"
    $ git config --local user.email user_name@example.com
 3. ブラウザからwiki.cgiにアクセスします。
+
+Apacheのcgiを通してオンライン編集するには
+-----------------------------------------
+
+1. contents/.git/configにuser.nameとuser.emailが記述されていることを確認してください。
+2. contents/のパーミッションを707にします。
+3. wrapper/ディレクトリに移動して"make"してください。
+   cgi-bin/wiki_edit.cgiがコンパイルされます。
+4. cgi-bin/ディレクトリに移動して、Apacheのbasic認証情報を作成してください。
+   htpasswd -c .htpasswd "basic認証のユーザー名"
+5. ブラウザから、wiki_edit.cgiにアクセスします。
