@@ -249,7 +249,8 @@ function ${formname}_async() {
   oReq.onload = function(oEvent) {
     if (oReq.status == 200) {
       document.getElementById('$domname').innerHTML = oReq.responseText;
-      MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+      MathJax.texReset(1);
+      MathJax.typesetPromise();
     } else {
       document.getElementById('$domname').innerHTML = "process failed";
     }
