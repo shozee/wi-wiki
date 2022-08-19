@@ -514,7 +514,6 @@ function run_CGI
 {
   echo Content-Type: text/html
   echo
-  cat $DATA_PATH/HEADER
   if [[ $REQUEST_METHOD == GET ]] ; then
     cmd=$(get_value "$QUERY_STRING" cmd)
     cmd=${cmd:-get}
@@ -538,5 +537,6 @@ function run_CGI
 }
 
 # main
-run_CGI 2>> error.log
+#run_CGI 2>> error.log
+run_CGI
 #REQUEST_METHOD=GET run_CGI | tee tmp.html 2> error.log # debug
