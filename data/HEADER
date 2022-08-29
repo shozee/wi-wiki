@@ -85,13 +85,8 @@
       table {
         border-collapse: collapse;
       }
-      /* https://gohugo.io/content-management/formats/#issues-with-markdown */
-      code.has-jax {
-        font: inherit;
-        font-size: 100%;
-        background: inherit;
-        border: inherit;
-        color: #515151;
+      .MJX-TEX a {
+        font-family: sans-serif;
       }
       /* highlight.js */
       .hljs {

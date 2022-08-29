@@ -295,7 +295,7 @@ function show_page_editor
 
   echo '</td><td valign="top">'
   # Top-Right: preview pane
-  echo '<div id="preview" style="overflow:auto; height:30em">'
+  echo '<div id="preview" style="overflow-y:scroll;">'
   (cd $WIKI_PATH; cat $1.md)
   echo '</div>'
   echo '</td></tr><tr><td colspan="2">'
